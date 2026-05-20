@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\lorenzo.celiento\\\\OneDrive - Doctums Global\\\\Desktop\\\\mallcops-main\" -File | ForEach-Object { $_.Name })",
+      "Bash(Get-Content \"C:\\\\Users\\\\LORENZ~1.CEL\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-lorenzo-celiento-OneDrive---Doctums-Global-Desktop-mallcops-main\\\\1249161e-a823-4aec-82ee-4a75214c6493\\\\tasks\\\\bhxdpxr06.output\" -Wait)",
+      "Bash(Select-String -Pattern \"Successfully|failed|error|complete\")"
+    ]
+  }
+}
