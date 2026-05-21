@@ -96,6 +96,35 @@
       transition: opacity 0.3s;
     }
 
+    /* ── COACH BAR ── */
+    .coach-bar {
+      position: fixed; top: 67px; left: 0; right: 0; z-index: 390;
+      background: var(--red);
+      display: none; align-items: center; gap: 12px;
+      padding: 0 22px; height: 34px;
+      border-bottom: 2px solid rgba(0,0,0,0.14);
+    }
+    .coach-bar.visible { display: flex; }
+    .coach-bar-lbl {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px; letter-spacing: 0.18em;
+      color: rgba(240,232,213,0.6); white-space: nowrap;
+    }
+    .athlete-select {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px; letter-spacing: 0.12em;
+      background: rgba(0,0,0,0.18); color: #f0e8d5;
+      border: 1px solid rgba(255,255,255,0.22); border-radius: 3px;
+      padding: 3px 8px; cursor: pointer; outline: none;
+    }
+    .athlete-select option { background: var(--dark); color: var(--bg); }
+    .coach-bar-tag {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px; letter-spacing: 0.14em;
+      color: rgba(240,232,213,0.5); margin-left: auto;
+    }
+    body.coach-mode { padding-top: 101px; }
+
     /* ── APP GRID ── */
     .app {
       display: grid;
@@ -334,6 +363,8 @@
     /* ── MOBILE (≤ 600px) ── */
     @media (max-width: 600px) {
       body { padding-top: 54px; }
+      body.coach-mode { padding-top: 82px; }
+      .coach-bar { top: 54px; height: 28px; padding: 0 12px; gap: 8px; }
       .topbar { height: 5px; }
       header { top: 5px; height: 49px; padding: 0 12px; gap: 10px; }
       .back-link { font-size: 11px; padding: 4px 8px; }
@@ -411,6 +442,15 @@
   </div>
   <div id="saveStatus"></div>
 </header>
+
+<!-- Coach bar – only visible for coaches -->
+<div class="coach-bar" id="coachBar">
+  <span class="coach-bar-lbl">VIEWING:</span>
+  <select class="athlete-select" id="athleteSelect">
+    <option value="__self__">MY PLAN</option>
+  </select>
+  <span class="coach-bar-tag" id="coachBarTag">COACH VIEW</span>
+</div>
 
 <div class="app">
 
@@ -555,10 +595,15 @@ let viewYear, viewMonth;
 let viewWeekStart = null;
 let selDate = null, selId = null;
 let selType = 'easy', selEffort = null, completedOn = false;
+let viewingAs = currentUser;   // whose plan is on screen (self or assigned athlete)
+let isCoach   = false;
 
 // ── Header ─────────────────────────────────────────────────────────────────
 
-document.getElementById('headerName').textContent = currentUser.toUpperCase() + "'S";
+function updateHeaderTitle() {
+  document.getElementById('headerName').textContent = viewingAs.toUpperCase() + "'S";
+}
+updateHeaderTitle();
 
 // ── Save status helper ─────────────────────────────────────────────────────
 
@@ -569,10 +614,12 @@ function setSaveStatus(msg) {
 
 // ── Firestore load/save ────────────────────────────────────────────────────
 
-async function load() {
-  setSaveStatus('Loading…');
+async function loadWorkoutsFor(name) {
+  workouts = {};
+  document.getElementById('raceDateInput').value = '';
+  document.getElementById('raceCountdownText').textContent = '';
   try {
-    const doc = await db.collection('workouts').doc(currentUser).get();
+    const doc = await db.collection('workouts').doc(name).get();
     if (doc.exists) {
       const d = doc.data();
       workouts = d.data || {};
@@ -581,6 +628,36 @@ async function load() {
         updateRaceCountdown(d.raceDate);
       }
     }
+  } catch (e) {
+    setSaveStatus('⚠ Load failed');
+    console.error('Load error:', e);
+    throw e;
+  }
+}
+
+async function load() {
+  setSaveStatus('Loading…');
+  try {
+    // Check if this user is a coach
+    const memberDoc = await db.collection('members').doc(currentUser).get();
+    if (memberDoc.exists) {
+      const md = memberDoc.data();
+      if (md.isCoach) {
+        isCoach = true;
+        const athletes = md.athletes || [];
+        const sel = document.getElementById('athleteSelect');
+        sel.innerHTML = '<option value="__self__">MY PLAN</option>';
+        athletes.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name.toUpperCase();
+          sel.appendChild(opt);
+        });
+        document.getElementById('coachBar').classList.add('visible');
+        document.body.classList.add('coach-mode');
+      }
+    }
+    await loadWorkoutsFor(viewingAs);
     setSaveStatus('');
   } catch (e) {
     setSaveStatus('⚠ Load failed');
@@ -591,7 +668,7 @@ async function load() {
 function save() {
   setSaveStatus('Saving…');
   const raceDate = document.getElementById('raceDateInput').value || null;
-  db.collection('workouts').doc(currentUser).set({
+  db.collection('workouts').doc(viewingAs).set({
     data: workouts,
     raceDate,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -912,6 +989,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 document.getElementById('fab').addEventListener('click', () => { const t = new Date(); openModal(dateKey(t.getFullYear(), t.getMonth(), t.getDate()), null); });
 
 document.getElementById('raceDateInput').addEventListener('change', e => { updateRaceCountdown(e.target.value); save(); });
+
+// ── Athlete switcher (coach mode) ──────────────────────────────────────────
+
+document.getElementById('athleteSelect').addEventListener('change', async function() {
+  viewingAs = this.value === '__self__' ? currentUser : this.value;
+  updateHeaderTitle();
+  workouts = {};
+  render();
+  setSaveStatus('Loading…');
+  try {
+    await loadWorkoutsFor(viewingAs);
+    setSaveStatus('');
+  } catch(e) { /* already handled inside */ }
+  render();
+});
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
