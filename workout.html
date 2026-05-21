@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Plan – Mall Cops</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      --bg:     #f0e8d5;
+      --dark:   #1a2240;
+      --red:    #c8341a;
+      --tan:    #d4c4a0;
+      --stripe: rgba(26,34,64,0.04);
+      --border: rgba(26,34,64,0.15);
+      --shadow-sm: 2px 3px 0 rgba(26,34,64,0.12);
+      --shadow:    3px 4px 0 rgba(26,34,64,0.16);
+      --shadow-lg: 4px 6px 0 rgba(26,34,64,0.22);
+      --r: 4px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Barlow', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+      min-height: 100vh;
+      font-size: 14px;
+      padding-top: 67px;
+    }
+
+    /* Paper grain */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+    }
+
+    /* Diagonal stripes */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 9998;
+      background: repeating-linear-gradient(-55deg,transparent,transparent 38px,var(--stripe) 38px,var(--stripe) 39px);
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 7px; z-index: 500;
+      background: repeating-linear-gradient(90deg,var(--red) 0,var(--red) 28px,var(--dark) 28px,var(--dark) 56px);
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: fixed; top: 7px; left: 0; right: 0; height: 60px;
+      background: var(--dark);
+      display: flex; align-items: center;
+      padding: 0 22px; gap: 16px; z-index: 400;
+    }
+
+    .back-link {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px; letter-spacing: 0.15em;
+      color: var(--bg); opacity: 0.6;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 5px 10px; border-radius: 3px;
+      transition: opacity 0.2s, background 0.2s, color 0.2s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .back-link:hover { opacity: 1; background: var(--red); border-color: var(--red); }
+
+    .logo {
+      display: flex; align-items: baseline; gap: 6px; line-height: 1;
+      flex: 1; justify-content: center;
+    }
+    .logo-icon    { font-size: 18px; }
+    .logo-main    { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.12em; color: var(--bg); }
+    .logo-accent  { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.12em; color: var(--red); }
+
+    #saveStatus {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px; letter-spacing: 0.16em;
+      color: var(--bg); opacity: 0.6;
+      min-width: 70px; text-align: right; flex-shrink: 0;
+      transition: opacity 0.3s;
+    }
+
+    /* ── APP GRID ── */
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 296px;
+      gap: 22px; padding: 22px 28px;
+      max-width: 1300px; margin: 0 auto;
+    }
+
+    /* ── CALENDAR CARD ── */
+    .calendar-card {
+      background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      padding: 24px; box-shadow: var(--shadow);
+    }
+
+    .cal-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 22px;
+    }
+
+    .month-nav { display: flex; align-items: center; gap: 14px; }
+
+    .month-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px; letter-spacing: 0.12em; color: var(--dark);
+      min-width: 220px; text-align: center;
+    }
+
+    .nav-btn {
+      background: var(--dark); border: none; border-radius: 3px;
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; color: var(--bg);
+      transition: background 0.2s; flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+    .nav-btn:hover { background: var(--red); }
+    .today-btn {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px; letter-spacing: 0.18em;
+      width: auto; padding: 0 16px;
+    }
+
+    /* ── CALENDAR GRID ── */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+
+    .dow-header {
+      text-align: center; font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px; letter-spacing: 0.2em; color: rgba(26,34,64,0.38);
+      padding: 4px 0 10px;
+    }
+
+    .day-cell {
+      min-height: 100px; border: 1.5px solid var(--border); border-radius: var(--r);
+      padding: 7px; cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #faf5ec; box-shadow: var(--shadow-sm); position: relative;
+    }
+    .day-cell:hover        { border-color: var(--red); box-shadow: var(--shadow-lg); }
+    .day-cell.other-month  { background: var(--bg); box-shadow: none; opacity: 0.45; }
+    .day-cell.today        { border-color: var(--red); border-width: 2px; background: #fdf0ea; }
+
+    .day-num {
+      font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600;
+      color: rgba(26,34,64,0.38); width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; margin-bottom: 3px;
+    }
+    .today .day-num { background: var(--red); color: var(--bg); font-weight: 700; }
+
+    .chips-wrap { display: flex; flex-direction: column; gap: 3px; }
+
+    .workout-chip {
+      border-radius: 3px; padding: 4px 7px; color: var(--bg);
+      font-size: 11px; line-height: 1.35; cursor: pointer;
+      transition: filter 0.15s, transform 0.12s, box-shadow 0.12s;
+      box-shadow: 1px 2px 0 rgba(26,34,64,0.28);
+    }
+    .workout-chip:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 2px 3px 0 rgba(26,34,64,0.32); }
+
+    .chip-type     { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.1em; }
+    .chip-dist     { font-size: 12px; font-weight: 500; margin-top: 1px; }
+    .chip-duration { font-size: 10px; opacity: 0.82; }
+
+    .add-hint {
+      display: flex; align-items: center; gap: 4px; margin-top: 4px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.12em;
+      color: rgba(26,34,64,0.28); opacity: 0;
+      transition: opacity 0.18s; pointer-events: none; user-select: none;
+    }
+    .add-hint-icon {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: rgba(26,34,64,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; line-height: 1;
+    }
+    .day-cell:hover .add-hint { opacity: 1; }
+
+    /* ── WEEK VIEW (mobile) ── */
+    .week-view {
+      display: none; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .week-nav {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; background: var(--dark);
+    }
+    .week-title {
+      font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.14em;
+      color: var(--bg); flex: 1; text-align: center;
+    }
+    .wk-nav-btn { background: rgba(255,255,255,0.12) !important; border: 1px solid rgba(255,255,255,0.2) !important; width: 30px !important; height: 30px !important; font-size: 13px !important; box-shadow: none !important; }
+    .wk-nav-btn:hover { background: var(--red) !important; border-color: var(--red) !important; }
+    .week-today-btn { font-family: 'Bebas Neue', sans-serif; font-size: 11px !important; letter-spacing: 0.14em; color: var(--bg); opacity: 0.65; background: none !important; border: 1px solid rgba(255,255,255,0.2) !important; width: auto !important; padding: 0 10px !important; box-shadow: none !important; }
+    .week-today-btn:hover { opacity: 1; background: var(--red) !important; border-color: var(--red) !important; }
+
+    .week-day-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 64px; cursor: pointer; transition: background 0.15s; }
+    .week-day-row:last-child { border-bottom: none; }
+    .week-day-row:active     { background: rgba(26,34,64,0.04); }
+    .wdr-today               { background: #fdf0ea !important; }
+
+    .wdr-head { width: 56px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 10px 6px; border-right: 1px solid var(--border); }
+    .wdr-dow  { font-family: 'Bebas Neue', sans-serif; font-size: 10px; letter-spacing: 0.2em; color: rgba(26,34,64,0.35); }
+    .wdr-num  { font-family: 'Barlow', sans-serif; font-size: 19px; font-weight: 700; color: var(--dark); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; line-height: 1; }
+    .wdr-num-today { background: var(--red); color: var(--bg); }
+
+    .wdr-body  { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+    .wdr-chip  { display: flex !important; flex-direction: row !important; align-items: center !important; padding: 5px 9px !important; border-radius: 4px; }
+    .wdr-chip .chip-type { font-size: 12px; letter-spacing: 0.07em; }
+    .wdr-chip-dist { font-size: 11px; font-weight: 500; opacity: 0.88; margin-left: 5px; }
+    .wdr-hint { font-family: 'Bebas Neue', sans-serif; font-size: 10px; letter-spacing: 0.16em; color: rgba(26,34,64,0.26); cursor: pointer; padding: 1px 0; }
+    .week-day-row:active .wdr-hint { color: rgba(26,34,64,0.5); }
+
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+    .card { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow); }
+
+    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.22em; color: rgba(26,34,64,0.4); margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+
+    .stats-grid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    .stat-box { background: var(--tan); border-radius: var(--r); padding: 11px 10px; text-align: center; border: 1px solid rgba(26,34,64,0.1); box-shadow: var(--shadow-sm); }
+    .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.04em; color: var(--dark); line-height: 1; }
+    .stat-lbl { font-size: 10px; font-weight: 600; color: rgba(26,34,64,0.45); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .week-chart { margin-top: 14px; }
+    .week-chart-label { font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.18em; color: rgba(26,34,64,0.38); margin-bottom: 8px; }
+    .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 52px; }
+    .wbar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
+    .wbar-fill  { width: 100%; background: var(--dark); border-radius: 2px 2px 0 0; min-height: 3px; transition: height 0.4s ease; }
+    .wbar-label { font-size: 9px; font-weight: 600; color: rgba(26,34,64,0.4); white-space: nowrap; }
+
+    .form-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--r); font-size: 13px; font-family: 'Barlow', sans-serif; color: var(--dark); background: rgba(255,255,255,0.5); outline: none; transition: border-color 0.2s; }
+    .form-input:focus { border-color: var(--red); }
+
+    .race-countdown-text { margin-top: 10px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.18em; color: var(--red); }
+
+    .upcoming-list { display: flex; flex-direction: column; gap: 5px; max-height: 280px; overflow-y: auto; }
+    .upcoming-list::-webkit-scrollbar { width: 4px; }
+    .upcoming-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .upcoming-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r); background: var(--tan); border: 1px solid rgba(26,34,64,0.08); cursor: pointer; transition: background 0.2s; box-shadow: 1px 2px 0 rgba(26,34,64,0.08); }
+    .upcoming-item:hover { background: var(--dark); }
+    .upcoming-item:hover .upcoming-date,
+    .upcoming-item:hover .upcoming-type,
+    .upcoming-item:hover .upcoming-dist { color: var(--bg); }
+    .upcoming-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .upcoming-info { flex: 1; min-width: 0; }
+    .upcoming-date { font-size: 10px; font-weight: 600; color: rgba(26,34,64,0.45); text-transform: uppercase; letter-spacing: 0.06em; }
+    .upcoming-type { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .upcoming-dist { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.05em; color: rgba(26,34,64,0.45); flex-shrink: 0; }
+    .empty-msg { font-size: 12px; color: rgba(26,34,64,0.38); text-align: center; padding: 16px 0; font-style: italic; }
+
+    /* ── MODAL ── */
+    .overlay { position: fixed; inset: 0; background: rgba(26,34,64,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal { background: var(--bg); border-radius: var(--r); padding: 28px; width: 510px; max-width: 95vw; max-height: 92vh; overflow-y: auto; transform: translateY(14px); transition: transform 0.22s; box-shadow: var(--shadow-lg); border: 1.5px solid var(--border); }
+    .overlay.open .modal { transform: translateY(0); }
+
+    .modal-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.14em; color: var(--dark); line-height: 1; }
+    .modal-date-str { font-size: 12px; font-weight: 600; color: rgba(26,34,64,0.45); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.07em; }
+
+    .close-btn { background: var(--tan); border: 1px solid var(--border); width: 32px; height: 32px; border-radius: 3px; cursor: pointer; font-size: 15px; color: rgba(26,34,64,0.5); display: flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+    .close-btn:hover { background: var(--dark); color: var(--bg); border-color: var(--dark); }
+
+    .field { margin-bottom: 16px; }
+    .field-label { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 0.22em; color: rgba(26,34,64,0.45); margin-bottom: 8px; }
+    .form-textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--r); font-size: 13px; font-family: 'Barlow', sans-serif; color: var(--dark); background: rgba(255,255,255,0.5); outline: none; transition: border-color 0.2s; resize: vertical; min-height: 78px; }
+    .form-textarea:focus { border-color: var(--red); }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .type-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .type-pill { padding: 9px 4px; border-radius: 3px; border: 2px solid transparent; cursor: pointer; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.1em; color: var(--bg); opacity: 0.52; transition: opacity 0.15s, transform 0.12s, box-shadow 0.12s; user-select: none; box-shadow: 1px 2px 0 rgba(26,34,64,0.22); }
+    .type-pill:hover { opacity: 0.85; transform: translateY(-1px); }
+    .type-pill.active { opacity: 1; border-color: rgba(255,255,255,0.55); box-shadow: 2px 3px 0 rgba(26,34,64,0.28); transform: translateY(-1px); }
+
+    .effort-row { display: flex; gap: 5px; }
+    .effort-btn { flex: 1; padding: 8px 2px; border: 1.5px solid var(--border); border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.5); color: rgba(26,34,64,0.38); transition: all 0.15s; font-family: 'Barlow', sans-serif; text-align: center; }
+    .effort-btn:hover { border-color: var(--dark); color: var(--dark); }
+    .effort-btn.active { background: var(--dark); border-color: var(--dark); color: var(--bg); }
+
+    .completed-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+    .toggle-track { width: 42px; height: 24px; background: rgba(26,34,64,0.14); border-radius: 100px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .toggle-track.on { background: #2E7D5B; }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--bg); border-radius: 50%; transition: transform 0.2s; box-shadow: 1px 1px 0 rgba(26,34,64,0.2); }
+    .toggle-track.on .toggle-thumb { transform: translateX(18px); }
+    .toggle-label { font-size: 14px; font-weight: 500; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 22px; padding-top: 18px; border-top: 1.5px solid var(--border); }
+    .btn { padding: 10px 20px; border-radius: 3px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.18em; cursor: pointer; border: none; transition: background 0.2s; white-space: nowrap; box-shadow: var(--shadow-sm); }
+    .btn-save   { background: var(--dark); color: var(--bg); flex: 1; }
+    .btn-save:hover { background: var(--red); }
+    .btn-cancel { background: var(--tan); color: var(--dark); border: 1px solid var(--border); }
+    .btn-cancel:hover { background: rgba(26,34,64,0.12); }
+    .btn-delete { background: rgba(200,52,26,0.1); color: var(--red); border: 1px solid rgba(200,52,26,0.25); }
+    .btn-delete:hover { background: rgba(200,52,26,0.22); }
+
+    /* ── FAB ── */
+    .fab { display: none; position: fixed; bottom: 24px; right: 20px; width: 54px; height: 54px; background: var(--dark); color: var(--bg); border: none; border-radius: 50%; font-size: 30px; font-weight: 300; line-height: 1; cursor: pointer; z-index: 300; box-shadow: var(--shadow-lg); transition: background 0.2s, transform 0.15s; align-items: center; justify-content: center; font-family: 'Barlow', sans-serif; }
+    .fab:hover  { background: var(--red); transform: scale(1.08); }
+    .fab:active { transform: scale(0.95); }
+
+    /* ── TABLET (≤ 920px) ── */
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; gap: 18px; }
+      .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .sidebar .card:nth-child(1),
+      .sidebar .card:nth-child(3) { grid-column: 1 / -1; }
+    }
+
+    /* ── MOBILE (≤ 600px) ── */
+    @media (max-width: 600px) {
+      body { padding-top: 54px; }
+      .topbar { height: 5px; }
+      header { top: 5px; height: 49px; padding: 0 12px; gap: 10px; }
+      .back-link { font-size: 11px; padding: 4px 8px; }
+      .logo-main, .logo-accent { font-size: 18px; }
+      .logo-icon { font-size: 16px; }
+      #saveStatus { font-size: 10px; min-width: 55px; }
+
+      .app { padding: 10px 10px 90px; gap: 12px; }
+
+      /* Switch to week view */
+      .calendar-card { display: none; }
+      .week-view     { display: block; }
+
+      .sidebar { display: flex; flex-direction: column; gap: 12px; }
+      .card { padding: 14px; }
+      .card-title { font-size: 14px; margin-bottom: 10px; padding-bottom: 6px; }
+      .stat-val { font-size: 24px; }
+      .stat-box { padding: 9px 8px; }
+
+      /* Bottom sheet modal */
+      .overlay { align-items: flex-end; }
+      .modal { width: 100%; max-width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; padding: 0 16px 32px; transform: translateY(100%); border-left: none; border-right: none; border-bottom: none; }
+      .modal::before { content: ''; display: block; width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 14px auto 18px; }
+      .overlay.open .modal { transform: translateY(0); }
+      .modal-head { margin-bottom: 14px; padding-bottom: 12px; }
+      .modal-title { font-size: 24px; }
+
+      /* Type pills: 2 columns – big & readable */
+      .type-pills { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+      .type-pill  { font-size: 15px; letter-spacing: 0.1em; padding: 13px 8px; }
+
+      /* Inputs */
+      .form-input, .form-textarea { min-height: 44px; font-size: 15px; }
+      .form-textarea { min-height: 70px; }
+      .field-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .field { margin-bottom: 12px; }
+
+      /* Effort: 2 rows of 5 */
+      .effort-row { flex-wrap: wrap; gap: 4px; }
+      .effort-btn { flex: 0 0 calc(20% - 4px); padding: 10px 0; font-size: 13px; min-height: 40px; }
+
+      .btn { font-size: 15px; padding: 12px 14px; }
+      .btn-save { min-height: 48px; }
+
+      .fab { display: flex; }
+    }
+
+    /* ── SMALL MOBILE (≤ 400px) ── */
+    @media (max-width: 400px) {
+      .logo-main, .logo-accent { font-size: 16px; }
+      .type-pill { font-size: 13px; padding: 11px 4px; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- Auth guard – runs before anything renders -->
+<script>
+  const currentUser = sessionStorage.getItem('mallcops_user');
+  if (!currentUser) window.location.href = 'login.html';
+</script>
+
+<div class="topbar"></div>
+
+<header>
+  <a class="back-link" href="members.html">&#8592; MEMBERS</a>
+  <div class="logo">
+    <span class="logo-icon">🏃</span>
+    <span class="logo-main" id="headerName"></span>
+    <span class="logo-accent">TRAINING</span>
+  </div>
+  <div id="saveStatus"></div>
+</header>
+
+<div class="app">
+
+  <!-- Month Calendar (desktop/tablet) -->
+  <div class="calendar-card">
+    <div class="cal-header">
+      <div class="month-nav">
+        <button class="nav-btn" id="prevBtn">&#8592;</button>
+        <span class="month-title" id="monthTitle"></span>
+        <button class="nav-btn" id="nextBtn">&#8594;</button>
+      </div>
+      <button class="nav-btn today-btn" id="todayBtn">Today</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- Week View (mobile) -->
+  <div class="week-view" id="weekView">
+    <div class="week-nav">
+      <button class="nav-btn wk-nav-btn" id="prevWeekBtn">&#8592;</button>
+      <span class="week-title" id="weekTitle"></span>
+      <button class="nav-btn wk-nav-btn" id="nextWeekBtn">&#8594;</button>
+      <button class="nav-btn week-today-btn" id="weekTodayBtn">TODAY</button>
+    </div>
+    <div id="weekDays"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="card-title">This Month</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="statDist">0</div><div class="stat-lbl">mi total</div></div>
+        <div class="stat-box"><div class="stat-val" id="statRuns">0</div><div class="stat-lbl">workouts</div></div>
+        <div class="stat-box"><div class="stat-val" id="statDone">0</div><div class="stat-lbl">completed</div></div>
+      </div>
+      <div class="week-chart">
+        <div class="week-chart-label">Weekly Distance (mi)</div>
+        <div class="week-bars" id="weekBars"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Race Day</div>
+      <input type="date" class="form-input" id="raceDateInput">
+      <div class="race-countdown-text" id="raceCountdownText"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Upcoming</div>
+      <div class="upcoming-list" id="upcomingList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" title="Add today's workout">+</button>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modalTitle">Add Workout</div>
+        <div class="modal-date-str" id="modalDateStr"></div>
+      </div>
+      <button class="close-btn" id="closeBtn">&#10005;</button>
+    </div>
+    <div class="field">
+      <div class="field-label">Workout Type</div>
+      <div class="type-pills" id="typePills"></div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="distInput">Distance (mi)</label>
+        <input type="number" class="form-input" id="distInput" step="0.1" min="0" placeholder="e.g. 6.2">
+      </div>
+      <div class="field">
+        <label class="field-label" for="durInput">Duration (hh:mm)</label>
+        <input type="text" class="form-input" id="durInput" placeholder="e.g. 1:05">
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">Perceived Effort</div>
+      <div class="effort-row" id="effortRow"></div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="notesInput">Notes</label>
+      <textarea class="form-textarea" id="notesInput" placeholder="How did it go? Anything to note…"></textarea>
+    </div>
+    <div class="field">
+      <div class="completed-toggle" id="completedToggle">
+        <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
+        <span class="toggle-label">Mark as completed</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-delete" id="deleteBtn" style="display:none">Delete</button>
+      <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
+      <button class="btn btn-save" id="saveBtn">Save Workout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase ───────────────────────────────────────────────────────────────
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDw8mLJ6MhSSgyFJaW1tGvpn0bi7P9DtOk",
+  authDomain: "mallcops.firebaseapp.com",
+  projectId: "mallcops",
+  storageBucket: "mallcops.firebasestorage.app",
+  messagingSenderId: "257434166770",
+  appId: "1:257434166770:web:8e4f066b20261a0e34b76b"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ── Constants ──────────────────────────────────────────────────────────────
+
+const TYPES = [
+  { id: 'easy',      label: 'Easy Run',    color: '#2E7D5B' },
+  { id: 'long',      label: 'Long Run',    color: '#1E5A9E' },
+  { id: 'tempo',     label: 'Tempo',       color: '#C8511A' },
+  { id: 'intervals', label: 'Intervals',   color: '#A82A1E' },
+  { id: 'recovery',  label: 'Recovery',    color: '#5E3C9A' },
+  { id: 'cross',     label: 'Cross Train', color: '#1E6E6E' },
+  { id: 'rest',      label: 'Rest Day',    color: '#7A6E5E' },
+  { id: 'race',      label: 'Race',        color: '#9E6318' },
+];
+
+const DOW    = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ── State ──────────────────────────────────────────────────────────────────
+
+let workouts = {};          // { 'YYYY-MM-DD': [{id, type, distance, duration, effort, notes, completed},...] }
+let viewYear, viewMonth;
+let viewWeekStart = null;
+let selDate = null, selId = null;
+let selType = 'easy', selEffort = null, completedOn = false;
+
+// ── Header ─────────────────────────────────────────────────────────────────
+
+document.getElementById(‘headerName’).textContent = currentUser.toUpperCase() + "’S";
+
+// ── Save status helper ─────────────────────────────────────────────────────
+
+function setSaveStatus(msg) {
+  const el = document.getElementById('saveStatus');
+  if (el) el.textContent = msg;
+}
+
+// ── Firestore load/save ────────────────────────────────────────────────────
+
+async function load() {
+  setSaveStatus('Loading…');
+  try {
+    const doc = await db.collection('workouts').doc(currentUser).get();
+    if (doc.exists) {
+      const d = doc.data();
+      workouts = d.data || {};
+      if (d.raceDate) {
+        document.getElementById('raceDateInput').value = d.raceDate;
+        updateRaceCountdown(d.raceDate);
+      }
+    }
+    setSaveStatus('');
+  } catch (e) {
+    setSaveStatus('⚠ Load failed');
+    console.error('Load error:', e);
+  }
+}
+
+function save() {
+  setSaveStatus('Saving…');
+  const raceDate = document.getElementById('raceDateInput').value || null;
+  db.collection('workouts').doc(currentUser).set({
+    data: workouts,
+    raceDate,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    setSaveStatus('Saved ✓');
+    setTimeout(() => setSaveStatus(''), 2500);
+  })
+  .catch(e => {
+    setSaveStatus('⚠ Error');
+    console.error('Save error:', e);
+  });
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function genId()          { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function dateKey(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function parseKey(k)      { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); }
+function typeInfo(id)     { return TYPES.find(t => t.id === id) || TYPES[0]; }
+
+function fmtDateShort(k) { return parseKey(k).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }); }
+function fmtDateLong(k)  { return parseKey(k).toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' }); }
+
+function monthWorkouts() {
+  return Object.entries(workouts)
+    .filter(([k]) => { const [y,m] = k.split('-').map(Number); return y === viewYear && m === viewMonth + 1; })
+    .flatMap(([k, ws]) => ws.map(w => ({ ...w, key: k })));
+}
+
+// ── Calendar ───────────────────────────────────────────────────────────────
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  DOW.forEach(d => { const el = document.createElement('div'); el.className = 'dow-header'; el.textContent = d; grid.appendChild(el); });
+
+  const today    = new Date();
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const lastDay  = new Date(viewYear, viewMonth + 1, 0);
+  let startOffset = firstDay.getDay();
+  startOffset = startOffset === 0 ? 6 : startOffset - 1;
+
+  for (let i = 0; i < startOffset; i++) {
+    const d = new Date(viewYear, viewMonth, -(startOffset - i - 1));
+    grid.appendChild(makeCell(d.getFullYear(), d.getMonth(), d.getDate(), true));
+  }
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const isToday = viewYear === today.getFullYear() && viewMonth === today.getMonth() && d === today.getDate();
+    grid.appendChild(makeCell(viewYear, viewMonth, d, false, isToday));
+  }
+  const total = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
+  for (let i = 1; i <= total - startOffset - lastDay.getDate(); i++) {
+    const d = new Date(viewYear, viewMonth + 1, i);
+    grid.appendChild(makeCell(d.getFullYear(), d.getMonth(), d.getDate(), true));
+  }
+  document.getElementById('monthTitle').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+  updateSidebar();
+}
+
+function makeCell(year, month, day, otherMonth, isToday = false) {
+  const key = dateKey(year, month, day);
+  const ws  = workouts[key] || [];
+  const cell = document.createElement('div');
+  cell.className = 'day-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
+
+  const num = document.createElement('div'); num.className = 'day-num'; num.textContent = day;
+  cell.appendChild(num);
+
+  if (ws.length) {
+    const wrap = document.createElement('div'); wrap.className = 'chips-wrap';
+    ws.forEach(w => {
+      const ti   = typeInfo(w.type);
+      const chip = document.createElement('div');
+      chip.className = 'workout-chip'; chip.style.background = ti.color;
+      const trow = document.createElement('div'); trow.className = 'chip-type'; trow.textContent = ti.label + (w.completed ? ' ✓' : '');
+      chip.appendChild(trow);
+      if (w.distance && w.type !== 'rest') { const dist = document.createElement('div'); dist.className = 'chip-dist'; dist.textContent = `${parseFloat(w.distance).toFixed(1)} mi`; chip.appendChild(dist); }
+      if (w.duration && w.type !== 'rest') { const dur  = document.createElement('div'); dur.className  = 'chip-duration'; dur.textContent  = w.duration; chip.appendChild(dur); }
+      chip.addEventListener('click', e => { e.stopPropagation(); openModal(key, w.id); });
+      wrap.appendChild(chip);
+    });
+    cell.appendChild(wrap);
+  }
+
+  if (!otherMonth) {
+    const hint = document.createElement('div'); hint.className = 'add-hint';
+    hint.innerHTML = '<span class="add-hint-icon">+</span> ADD WORKOUT';
+    cell.appendChild(hint);
+    cell.addEventListener('click', () => openModal(key, null));
+  }
+  return cell;
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+
+function updateSidebar() { updateStats(); updateWeekBars(); updateUpcoming(); }
+
+function updateStats() {
+  const all = monthWorkouts();
+  let total = 0, count = 0, done = 0;
+  all.forEach(w => {
+    if (w.type !== 'rest') count++;
+    if (w.completed) done++;
+    if (w.distance) total += parseFloat(w.distance);
+  });
+  document.getElementById('statDist').textContent = total.toFixed(1);
+  document.getElementById('statRuns').textContent = count;
+  document.getElementById('statDone').textContent = done;
+}
+
+function updateWeekBars() {
+  const bars = document.getElementById('weekBars'); bars.innerHTML = '';
+  const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const weekTotals = {}, allWeeks = new Set();
+  for (let d = 1; d <= lastDay; d++) {
+    const wk = getWeekOfMonth(new Date(viewYear, viewMonth, d));
+    allWeeks.add(wk);
+    (workouts[dateKey(viewYear, viewMonth, d)] || []).forEach(w => {
+      if (w.distance) weekTotals[wk] = (weekTotals[wk] || 0) + parseFloat(w.distance);
+    });
+  }
+  const keys = [...allWeeks].sort((a,b) => a-b);
+  const max  = Math.max(...Object.values(weekTotals), 1);
+  keys.forEach((wk, i) => {
+    const dist = weekTotals[wk] || 0;
+    const bar  = document.createElement('div'); bar.className = 'wbar';
+    const fill = document.createElement('div'); fill.className = 'wbar-fill';
+    fill.style.height  = dist > 0 ? `${Math.max((dist/max)*42,3)}px` : '3px';
+    fill.style.opacity = dist > 0 ? '1' : '0.2';
+    fill.title = `Week ${i+1}: ${dist.toFixed(1)} mi`;
+    const lbl  = document.createElement('div'); lbl.className = 'wbar-label'; lbl.textContent = dist.toFixed(0);
+    bar.appendChild(fill); bar.appendChild(lbl); bars.appendChild(bar);
+  });
+}
+
+function getWeekOfMonth(d) {
+  const first = new Date(d.getFullYear(), d.getMonth(), 1);
+  const dow = first.getDay(), offset = dow <= 1 ? 1 - dow : 8 - dow;
+  const monday = new Date(first); monday.setDate(first.getDate() + offset - 7);
+  return Math.ceil((d - monday) / (7 * 86400000));
+}
+
+function updateUpcoming() {
+  const list = document.getElementById('upcomingList'); list.innerHTML = '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = Object.entries(workouts)
+    .filter(([k]) => parseKey(k) >= today)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .flatMap(([k, ws]) => ws.map(w => ({ ...w, key: k })))
+    .slice(0, 8);
+  if (!upcoming.length) { list.innerHTML = '<div class="empty-msg">No upcoming workouts</div>'; return; }
+  upcoming.forEach(w => {
+    const ti = typeInfo(w.type);
+    const item = document.createElement('div'); item.className = 'upcoming-item';
+    item.innerHTML = `<div class="upcoming-dot" style="background:${ti.color}"></div><div class="upcoming-info"><div class="upcoming-date">${fmtDateShort(w.key)}</div><div class="upcoming-type">${ti.label}${w.completed?' ✓':''}</div></div><div class="upcoming-dist">${w.distance?parseFloat(w.distance).toFixed(1)+' mi':''}</div>`;
+    item.addEventListener('click', () => openModal(w.key, w.id));
+    list.appendChild(item);
+  });
+}
+
+// ── Race Countdown ─────────────────────────────────────────────────────────
+
+function updateRaceCountdown(dateStr) {
+  if (!dateStr) return;
+  const race = new Date(dateStr + 'T00:00:00'), today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((race - today) / 86400000);
+  const txt  = document.getElementById('raceCountdownText');
+  const hdr  = document.getElementById('saveStatus'); // we only update txt; status used for save feedback
+  if (diff > 0)      txt.textContent = `🎯 ${diff} DAYS TO RACE DAY`;
+  else if (diff ===0) txt.textContent = '🎉 RACE DAY IS TODAY!';
+  else               txt.textContent = `RACE WAS ${Math.abs(diff)} DAYS AGO`;
+}
+
+// ── Week View ──────────────────────────────────────────────────────────────
+
+function getMonday(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
+  return d;
+}
+
+function renderWeekView() {
+  const container = document.getElementById('weekDays'); if (!container) return;
+  container.innerHTML = '';
+  if (!viewWeekStart) viewWeekStart = getMonday(new Date());
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const weekEnd = new Date(viewWeekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+  const s = viewWeekStart.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  const e = weekEnd.toLocaleDateString('en-US',       { month:'short', day:'numeric', year:'numeric' });
+  document.getElementById('weekTitle').textContent = `${s} – ${e}`;
+
+  const DS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(viewWeekStart); date.setDate(date.getDate() + i);
+    const key = dateKey(date.getFullYear(), date.getMonth(), date.getDate());
+    const ws  = workouts[key] || [];
+    const isToday = date.getTime() === today.getTime();
+
+    const row = document.createElement('div'); row.className = 'week-day-row' + (isToday ? ' wdr-today' : '');
+
+    const head = document.createElement('div'); head.className = 'wdr-head';
+    const dow  = document.createElement('div'); dow.className  = 'wdr-dow';  dow.textContent = DS[i];
+    const num  = document.createElement('div'); num.className  = 'wdr-num' + (isToday ? ' wdr-num-today' : ''); num.textContent = date.getDate();
+    head.appendChild(dow); head.appendChild(num);
+
+    const body = document.createElement('div'); body.className = 'wdr-body';
+    ws.forEach(w => {
+      const ti   = typeInfo(w.type);
+      const chip = document.createElement('div'); chip.className = 'workout-chip wdr-chip'; chip.style.background = ti.color;
+      const lbl  = document.createElement('span'); lbl.className = 'chip-type'; lbl.textContent = ti.label + (w.completed ? ' ✓' : '');
+      chip.appendChild(lbl);
+      if (w.distance && w.type !== 'rest') { const dist = document.createElement('span'); dist.className = 'wdr-chip-dist'; dist.textContent = `${parseFloat(w.distance).toFixed(1)} mi`; chip.appendChild(dist); }
+      chip.addEventListener('click', ev => { ev.stopPropagation(); openModal(key, w.id); });
+      body.appendChild(chip);
+    });
+    const hint = document.createElement('div'); hint.className = 'wdr-hint';
+    hint.textContent = ws.length ? '+ ADD ANOTHER' : '+ ADD WORKOUT';
+    hint.addEventListener('click', ev => { ev.stopPropagation(); openModal(key, null); });
+    body.appendChild(hint);
+
+    row.addEventListener('click', () => openModal(key, null));
+    row.appendChild(head); row.appendChild(body);
+    container.appendChild(row);
+  }
+  updateSidebar();
+}
+
+function render() { renderCalendar(); renderWeekView(); }
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+
+function openModal(key, id) {
+  selDate = key; selId = id;
+  const ws = workouts[key] || [], w = id ? ws.find(x => x.id === id) : null;
+  document.getElementById('modalTitle').textContent   = w ? 'Edit Workout' : 'Add Workout';
+  document.getElementById('modalDateStr').textContent = fmtDateLong(key);
+  document.getElementById('deleteBtn').style.display  = w ? '' : 'none';
+  selType = w ? w.type : 'easy'; selEffort = w ? (w.effort ?? null) : null; completedOn = w ? !!w.completed : false;
+  document.getElementById('distInput').value  = w?.distance ?? '';
+  document.getElementById('durInput').value   = w?.duration  ?? '';
+  document.getElementById('notesInput').value = w?.notes     ?? '';
+  renderTypePills(); renderEffortBtns(); syncToggle();
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('distInput').focus(), 60);
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+function renderTypePills() {
+  const wrap = document.getElementById('typePills'); wrap.innerHTML = '';
+  TYPES.forEach(t => {
+    const pill = document.createElement('div');
+    pill.className = 'type-pill' + (selType === t.id ? ' active' : '');
+    pill.style.background = t.color; pill.textContent = t.label;
+    pill.addEventListener('click', () => { selType = t.id; renderTypePills(); });
+    wrap.appendChild(pill);
+  });
+}
+
+function renderEffortBtns() {
+  const row = document.getElementById('effortRow'); row.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('button'); btn.type = 'button';
+    btn.className = 'effort-btn' + (selEffort === i ? ' active' : '');
+    btn.textContent = i;
+    btn.addEventListener('click', () => { selEffort = selEffort === i ? null : i; renderEffortBtns(); });
+    row.appendChild(btn);
+  }
+}
+
+function syncToggle() { document.getElementById('toggleTrack').classList.toggle('on', completedOn); }
+
+document.getElementById('completedToggle').addEventListener('click', () => { completedOn = !completedOn; syncToggle(); });
+
+// ── Save workout ───────────────────────────────────────────────────────────
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const dist  = document.getElementById('distInput').value;
+  const dur   = document.getElementById('durInput').value.trim();
+  const notes = document.getElementById('notesInput').value.trim();
+  if (!workouts[selDate]) workouts[selDate] = [];
+  const ws = workouts[selDate];
+  if (selId) {
+    const idx = ws.findIndex(x => x.id === selId);
+    if (idx !== -1) ws[idx] = { ...ws[idx], type: selType, distance: dist ? parseFloat(dist) : null, duration: dur || null, effort: selEffort, notes: notes || null, completed: completedOn, savedAt: new Date().toISOString() };
+  } else {
+    ws.push({ id: genId(), type: selType, distance: dist ? parseFloat(dist) : null, duration: dur || null, effort: selEffort, notes: notes || null, completed: completedOn, savedAt: new Date().toISOString() });
+  }
+  save(); render(); closeModal();
+});
+
+// ── Delete workout ─────────────────────────────────────────────────────────
+
+document.getElementById('deleteBtn').addEventListener('click', () => {
+  if (!selDate || !selId || !confirm('Delete this workout?')) return;
+  workouts[selDate] = (workouts[selDate] || []).filter(x => x.id !== selId);
+  if (workouts[selDate].length === 0) delete workouts[selDate];
+  save(); render(); closeModal();
+});
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+
+document.getElementById('prevBtn').addEventListener('click',  () => { viewMonth--; if (viewMonth < 0)  { viewMonth = 11; viewYear--; } renderCalendar(); });
+document.getElementById('nextBtn').addEventListener('click',  () => { viewMonth++; if (viewMonth > 11) { viewMonth =  0; viewYear++; } renderCalendar(); });
+document.getElementById('todayBtn').addEventListener('click', () => { const n = new Date(); viewYear = n.getFullYear(); viewMonth = n.getMonth(); viewWeekStart = getMonday(n); render(); });
+
+document.getElementById('prevWeekBtn').addEventListener('click', () => { viewWeekStart = new Date(viewWeekStart); viewWeekStart.setDate(viewWeekStart.getDate() - 7); renderWeekView(); });
+document.getElementById('nextWeekBtn').addEventListener('click', () => { viewWeekStart = new Date(viewWeekStart); viewWeekStart.setDate(viewWeekStart.getDate() + 7); renderWeekView(); });
+document.getElementById('weekTodayBtn').addEventListener('click', () => { viewWeekStart = getMonday(new Date()); renderWeekView(); });
+
+document.getElementById('closeBtn').addEventListener('click',  closeModal);
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click',   e => { if (e.target === document.getElementById('overlay')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('fab').addEventListener('click', () => { const t = new Date(); openModal(dateKey(t.getFullYear(), t.getMonth(), t.getDate()), null); });
+
+document.getElementById('raceDateInput').addEventListener('change', e => { updateRaceCountdown(e.target.value); save(); });
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+const _n  = new Date();
+viewYear  = _n.getFullYear();
+viewMonth = _n.getMonth();
+viewWeekStart = getMonday(_n);
+
+load().then(() => render());
+</script>
+</body>
+</html>
