@@ -13,6 +13,5 @@ window.RUNNERS = [
   "Karl",
   "Mark",
   "Mike",
-  "Lorenzo",
-  "Luca"
+  "Lorenzo"
 ];
