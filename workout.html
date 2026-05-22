@@ -643,7 +643,7 @@
         <button class="period-btn" id="btnMonthly">MONTHLY</button>
       </div>
     </div>
-    <div class="chart-wrap">
+    <div class="chart-wrap" id="chartWrap">
       <canvas id="statsChart"></canvas>
     </div>
     <div class="stats-legend" id="statsLegend"></div>
@@ -1215,7 +1215,7 @@ function renderStats() {
     }))
     .filter(ds => ds.data.some(v => v > 0));
 
-  const wrap = document.getElementById('statsChart').parentElement;
+  const wrap = document.getElementById('chartWrap');
 
   if (datasets.length === 0) {
     if (statsChart) { statsChart.destroy(); statsChart = null; }
@@ -1224,6 +1224,7 @@ function renderStats() {
     return;
   }
 
+  // Restore canvas if empty-state div replaced it
   if (!wrap.querySelector('canvas')) {
     wrap.innerHTML = '';
     const c = document.createElement('canvas'); c.id = 'statsChart';
