@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
   <style>
     :root {
       --bg:     #f0e8d5;
@@ -489,39 +489,57 @@
       transition: background 0.15s;
     }
     .stats-now-btn:hover { background: var(--red); }
-    .chart-wrap { position: relative; height: 340px; }
 
-    .stats-legend {
-      display: flex; flex-wrap: wrap; gap: 8px 20px;
-      margin-top: 16px; padding-top: 14px;
-      border-top: 1px solid var(--border);
+    /* ── Week filter pills ── */
+    .stats-week-filter {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 20px;
     }
-    .legend-item {
-      display: flex; align-items: center; gap: 7px;
+    .wf-btn {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 12px; letter-spacing: 0.12em;
-      opacity: 0.75;
+      font-size: 12px; letter-spacing: 0.16em;
+      padding: 5px 14px; border-radius: 3px;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--dark);
+      cursor: pointer; opacity: 0.45;
+      transition: opacity 0.15s, background 0.15s, border-color 0.15s;
     }
+    .wf-btn.active {
+      background: var(--dark); color: var(--bg);
+      border-color: var(--dark); opacity: 1;
+    }
+    .wf-btn:hover:not(.active) { opacity: 0.75; }
+
+    /* ── Stats total line ── */
+    .stats-total {
+      font-family: 'Barlow', sans-serif;
+      font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+      opacity: 0.4; margin-bottom: 14px;
+    }
+    .stats-total strong {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 0.08em;
+      opacity: 1; color: var(--dark); margin-right: 4px;
+    }
+
     .legend-dot {
-      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
     }
 
     .stats-empty {
-      text-align: center; padding: 4rem 0;
+      text-align: center; padding: 3rem 0;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 0.2em;
+      font-size: 16px; letter-spacing: 0.2em;
       opacity: 0.25;
     }
 
     /* ── Breakdown bars ── */
     .stats-breakdown {
-      margin-top: 20px; padding-top: 16px;
-      border-top: 1px solid var(--border);
-      display: flex; flex-direction: column; gap: 9px;
+      display: flex; flex-direction: column; gap: 10px;
     }
     .breakdown-row {
       display: grid;
-      grid-template-columns: 110px 1fr 46px 70px;
+      grid-template-columns: 114px 1fr 46px 68px;
       align-items: center; gap: 10px;
     }
     .breakdown-name {
@@ -532,12 +550,11 @@
     }
     .breakdown-track {
       height: 8px; border-radius: 4px;
-      background: rgba(26,34,64,0.08);
-      overflow: hidden;
+      background: rgba(26,34,64,0.08); overflow: hidden;
     }
     .breakdown-fill {
       height: 100%; border-radius: 4px;
-      transition: width 0.4s ease;
+      transition: width 0.35s ease;
     }
     .breakdown-pct {
       font-family: 'Bebas Neue', sans-serif;
@@ -546,12 +563,11 @@
     }
     .breakdown-mi {
       font-family: 'Barlow', sans-serif;
-      font-size: 11px; letter-spacing: 0.06em;
-      opacity: 0.45; text-align: right;
+      font-size: 11px; opacity: 0.42; text-align: right;
     }
 
     @media (max-width: 500px) {
-      .breakdown-row { grid-template-columns: 90px 1fr 40px 56px; gap: 7px; }
+      .breakdown-row { grid-template-columns: 88px 1fr 38px 54px; gap: 7px; }
       .breakdown-name { font-size: 11px; }
     }
 
@@ -560,8 +576,6 @@
       .view-tab  { font-size: 12px; padding: 8px 16px; }
       .stats-panel { padding: 0 10px 60px; }
       .stats-card  { padding: 16px 14px 14px; }
-      .chart-wrap  { height: 260px; }
-      .stats-heading { font-size: 15px; }
     }
   </style>
 </head>
@@ -667,10 +681,8 @@
         <button class="nav-btn stats-now-btn" id="statsNowBtn">NOW</button>
       </div>
     </div>
-    <div class="chart-wrap" id="chartWrap">
-      <canvas id="statsChart"></canvas>
-    </div>
-    <div class="stats-legend" id="statsLegend"></div>
+    <div class="stats-week-filter" id="statsWeekFilter"></div>
+    <div class="stats-total" id="statsTotal"></div>
     <div class="stats-breakdown" id="statsBreakdown"></div>
   </div>
 </div>
@@ -1159,189 +1171,124 @@ document.getElementById('raceDateInput').addEventListener('change', e => { updat
 
 // ── Statistics ─────────────────────────────────────────────────────────────
 
-let statsChart     = null;
 let statsMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let statsWeekSel   = 'all';   // 'all' | 0 | 1 | 2 | 3 | 4 (week index within month)
 
-function updateStatsPeriodLabel() {
-  document.getElementById('statsPeriodLabel').textContent =
-    statsMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
-}
-
-// Week-by-week totals within statsMonthDate's month
-function getMonthlyData() {
+// Returns array of Monday dates for each week overlapping the current stats month
+function getWeeksInStatsMonth() {
   const y = statsMonthDate.getFullYear(), m = statsMonthDate.getMonth();
   const lastDay = new Date(y, m + 1, 0);
   const cur = getMonday(new Date(y, m, 1));
-  const rows = [];
-  while (cur <= lastDay) {
-    const mon = new Date(cur);
-    const label = mon.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const sums = {};
-    TYPES.forEach(t => sums[t.id] = 0);
-    for (let d = 0; d < 7; d++) {
-      const day = new Date(mon); day.setDate(day.getDate() + d);
-      const key = dateKey(day.getFullYear(), day.getMonth(), day.getDate());
-      (workouts[key] || []).forEach(w => {
-        if (w.distance && sums.hasOwnProperty(w.type))
-          sums[w.type] += parseFloat(w.distance);
-      });
-    }
-    rows.push({ label, sums });
-    cur.setDate(cur.getDate() + 7);
-  }
-  return rows;
+  const weeks = [];
+  while (cur <= lastDay) { weeks.push(new Date(cur)); cur.setDate(cur.getDate() + 7); }
+  return weeks;
 }
 
-// Total mileage per type for the current stats month
-function getMonthlyTypeTotals() {
-  const y = statsMonthDate.getFullYear(), m = statsMonthDate.getMonth();
+// Mileage per type for the selected period
+function getTypeTotals() {
   const totals = {};
   TYPES.forEach(t => totals[t.id] = 0);
-  Object.entries(workouts).forEach(([key, wList]) => {
-    const d = parseKey(key);
-    if (d.getFullYear() === y && d.getMonth() === m) {
-      wList.forEach(w => {
-        if (w.distance && totals.hasOwnProperty(w.type))
-          totals[w.type] += parseFloat(w.distance);
-      });
+
+  if (statsWeekSel === 'all') {
+    const y = statsMonthDate.getFullYear(), m = statsMonthDate.getMonth();
+    Object.entries(workouts).forEach(([key, wList]) => {
+      const d = parseKey(key);
+      if (d.getFullYear() === y && d.getMonth() === m)
+        wList.forEach(w => { if (w.distance && totals.hasOwnProperty(w.type)) totals[w.type] += parseFloat(w.distance); });
+    });
+  } else {
+    const mon = getWeeksInStatsMonth()[statsWeekSel];
+    if (mon) {
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(mon); day.setDate(day.getDate() + d);
+        const key = dateKey(day.getFullYear(), day.getMonth(), day.getDate());
+        (workouts[key] || []).forEach(w => { if (w.distance && totals.hasOwnProperty(w.type)) totals[w.type] += parseFloat(w.distance); });
+      }
     }
-  });
+  }
   return totals;
 }
 
-function renderBreakdown() {
-  const totals = getMonthlyTypeTotals();
-  const grand  = Object.values(totals).reduce((s, v) => s + v, 0);
-  const el     = document.getElementById('statsBreakdown');
-  el.innerHTML = '';
-  if (grand === 0) return;
+function renderWeekFilterBtns() {
+  const weeks = getWeeksInStatsMonth();
+  const wrap  = document.getElementById('statsWeekFilter');
+  wrap.innerHTML = '';
 
-  // Only types with distance, sorted descending
-  const active = TYPES.filter(t => totals[t.id] > 0)
-    .sort((a, b) => totals[b.id] - totals[a.id]);
+  const makeBtn = (label, val) => {
+    const b = document.createElement('button');
+    b.className = 'wf-btn' + (statsWeekSel === val ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => { statsWeekSel = val; renderStats(); });
+    wrap.appendChild(b);
+  };
 
-  active.forEach(t => {
-    const pct = (totals[t.id] / grand * 100).toFixed(1);
-    const row = document.createElement('div');
-    row.className = 'breakdown-row';
-    row.innerHTML = `
-      <div class="breakdown-name">
-        <div class="legend-dot" style="background:${t.color}"></div>
-        ${t.label.toUpperCase()}
-      </div>
-      <div class="breakdown-track">
-        <div class="breakdown-fill" style="width:${pct}%;background:${t.color}"></div>
-      </div>
-      <div class="breakdown-pct">${Math.round(pct)}%</div>
-      <div class="breakdown-mi">${totals[t.id].toFixed(1)} mi</div>`;
-    el.appendChild(row);
+  makeBtn('MONTH', 'all');
+  weeks.forEach((mon, i) => {
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    makeBtn(`W${i + 1}  ${fmt(mon)}–${fmt(sun)}`, i);
   });
 }
 
 function renderStats() {
-  updateStatsPeriodLabel();
-  const rows   = getMonthlyData();
-  const labels = rows.map(r => r.label);
+  // Period label
+  document.getElementById('statsPeriodLabel').textContent =
+    statsMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
 
-  const datasets = TYPES
-    .map(t => ({
-      label: t.label,
-      data: rows.map(r => parseFloat(r.sums[t.id].toFixed(2))),
-      borderColor: t.color,
-      backgroundColor: t.color + '28',
-      pointBackgroundColor: t.color,
-      pointBorderColor: '#fff',
-      pointBorderWidth: 1.5,
-      borderWidth: 2.5,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-      tension: 0.3,
-      fill: false,
-    }))
-    .filter(ds => ds.data.some(v => v > 0));
+  // Week filter buttons (regenerate in case month changed)
+  renderWeekFilterBtns();
 
-  const wrap = document.getElementById('chartWrap');
+  const totals = getTypeTotals();
+  const grand  = Object.values(totals).reduce((s, v) => s + v, 0);
+  const bd     = document.getElementById('statsBreakdown');
+  const tot    = document.getElementById('statsTotal');
 
-  if (datasets.length === 0) {
-    if (statsChart) { statsChart.destroy(); statsChart = null; }
-    wrap.innerHTML = '<div class="stats-empty">No mileage data for this month</div>';
-    document.getElementById('statsLegend').innerHTML = '';
-    document.getElementById('statsBreakdown').innerHTML = '';
+  if (grand === 0) {
+    tot.innerHTML = '';
+    bd.innerHTML  = '<div class="stats-empty">No mileage data for this period</div>';
     return;
   }
 
-  if (!wrap.querySelector('canvas')) {
-    wrap.innerHTML = '';
-    const c = document.createElement('canvas'); c.id = 'statsChart';
-    wrap.appendChild(c);
-  }
+  tot.innerHTML = `<strong>${grand.toFixed(1)}</strong> mi total`;
 
-  const ctx = document.getElementById('statsChart').getContext('2d');
-  if (statsChart) { statsChart.destroy(); statsChart = null; }
-
-  statsChart = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(26,34,64,0.92)',
-          titleFont: { family: 'Bebas Neue', size: 13 },
-          bodyFont:  { family: 'Barlow', size: 12 },
-          padding: 10, cornerRadius: 3,
-          callbacks: {
-            label: ctx => `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} mi`
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(26,34,64,0.07)' },
-          ticks: { font: { family: 'Barlow', size: 11 }, color: 'rgba(26,34,64,0.45)', maxRotation: 40 }
-        },
-        y: {
-          grid: { color: 'rgba(26,34,64,0.07)' },
-          beginAtZero: true,
-          ticks: {
-            font: { family: 'Barlow', size: 11 }, color: 'rgba(26,34,64,0.45)',
-            callback: v => v + ' mi'
-          }
-        }
-      }
-    }
-  });
-
-  // Legend (small dots only – breakdown section covers the detail)
-  const legend = document.getElementById('statsLegend');
-  legend.innerHTML = '';
-  datasets.forEach(ds => {
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    item.innerHTML = `<div class="legend-dot" style="background:${ds.borderColor}"></div>${ds.label.toUpperCase()}`;
-    legend.appendChild(item);
-  });
-
-  renderBreakdown();
+  bd.innerHTML = '';
+  TYPES.filter(t => totals[t.id] > 0)
+    .sort((a, b) => totals[b.id] - totals[a.id])
+    .forEach(t => {
+      const pct = (totals[t.id] / grand * 100);
+      const row = document.createElement('div');
+      row.className = 'breakdown-row';
+      row.innerHTML = `
+        <div class="breakdown-name">
+          <div class="legend-dot" style="background:${t.color}"></div>
+          ${t.label.toUpperCase()}
+        </div>
+        <div class="breakdown-track">
+          <div class="breakdown-fill" style="width:${pct.toFixed(1)}%;background:${t.color}"></div>
+        </div>
+        <div class="breakdown-pct">${Math.round(pct)}%</div>
+        <div class="breakdown-mi">${totals[t.id].toFixed(1)} mi</div>`;
+      bd.appendChild(row);
+    });
 }
 
 // ── Stats navigation ────────────────────────────────────────────────────────
 
 document.getElementById('statsPrevBtn').addEventListener('click', () => {
   statsMonthDate = new Date(statsMonthDate.getFullYear(), statsMonthDate.getMonth() - 1, 1);
+  statsWeekSel = 'all';
   renderStats();
 });
 
 document.getElementById('statsNextBtn').addEventListener('click', () => {
   statsMonthDate = new Date(statsMonthDate.getFullYear(), statsMonthDate.getMonth() + 1, 1);
+  statsWeekSel = 'all';
   renderStats();
 });
 
 document.getElementById('statsNowBtn').addEventListener('click', () => {
   statsMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  statsWeekSel = 'all';
   renderStats();
 });
 
