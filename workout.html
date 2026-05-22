@@ -469,11 +469,27 @@
       margin-bottom: 22px;
       flex-wrap: wrap;
     }
-    .stats-heading {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 0.18em;
-      flex: 1;
+    .stats-nav {
+      display: flex; align-items: center; gap: 6px; flex: 1;
     }
+    .stats-arrow {
+      padding: 5px 10px; font-size: 14px;
+    }
+    .stats-period-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px; letter-spacing: 0.14em;
+      min-width: 160px; text-align: center;
+    }
+    .stats-now-btn {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px; letter-spacing: 0.14em;
+      background: var(--dark); color: var(--bg);
+      border: none; border-radius: 3px;
+      padding: 5px 12px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .stats-now-btn:hover { background: var(--red); }
+    .stats-toggle { display: flex; gap: 6px; flex-shrink: 0; }
     .period-btn {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 12px; letter-spacing: 0.16em;
@@ -616,9 +632,16 @@
 <div class="stats-panel" id="appStats">
   <div class="stats-card">
     <div class="stats-controls">
-      <span class="stats-heading">MILEAGE BY TYPE</span>
-      <button class="period-btn active" id="btnWeekly">WEEKLY</button>
-      <button class="period-btn" id="btnMonthly">MONTHLY</button>
+      <div class="stats-nav">
+        <button class="nav-btn stats-arrow" id="statsPrevBtn">&#8592;</button>
+        <span class="stats-period-label" id="statsPeriodLabel"></span>
+        <button class="nav-btn stats-arrow" id="statsNextBtn">&#8594;</button>
+        <button class="nav-btn stats-now-btn" id="statsNowBtn">NOW</button>
+      </div>
+      <div class="stats-toggle">
+        <button class="period-btn active" id="btnWeekly">WEEKLY</button>
+        <button class="period-btn" id="btnMonthly">MONTHLY</button>
+      </div>
     </div>
     <div class="chart-wrap">
       <canvas id="statsChart"></canvas>
@@ -1111,16 +1134,48 @@ document.getElementById('raceDateInput').addEventListener('change', e => { updat
 
 // ── Statistics ─────────────────────────────────────────────────────────────
 
-let statsChart   = null;
-let statsPeriod  = 'weekly';
+let statsChart      = null;
+let statsPeriod     = 'weekly';
+let statsWeekStart  = getMonday(new Date());
+let statsMonthDate  = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
+function updateStatsPeriodLabel() {
+  const lbl = document.getElementById('statsPeriodLabel');
+  if (statsPeriod === 'weekly') {
+    const sun = new Date(statsWeekStart); sun.setDate(sun.getDate() + 6);
+    const o = { month: 'short', day: 'numeric' };
+    lbl.textContent = statsWeekStart.toLocaleDateString('en-US', o) + ' – ' + sun.toLocaleDateString('en-US', o);
+  } else {
+    lbl.textContent = statsMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+  }
+}
+
+// Weekly: 7 individual days (Mon–Sun) of statsWeekStart
 function getWeeklyData() {
   const rows = [];
-  const today = new Date();
-  const baseMonday = getMonday(today);
-  for (let i = 15; i >= 0; i--) {
-    const mon = new Date(baseMonday);
-    mon.setDate(mon.getDate() - i * 7);
+  for (let d = 0; d < 7; d++) {
+    const day = new Date(statsWeekStart); day.setDate(day.getDate() + d);
+    const label = day.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const sums = {};
+    TYPES.forEach(t => sums[t.id] = 0);
+    const key = dateKey(day.getFullYear(), day.getMonth(), day.getDate());
+    (workouts[key] || []).forEach(w => {
+      if (w.distance && sums.hasOwnProperty(w.type))
+        sums[w.type] += parseFloat(w.distance);
+    });
+    rows.push({ label, sums });
+  }
+  return rows;
+}
+
+// Monthly: week-by-week totals for statsMonthDate's month
+function getMonthlyData() {
+  const y = statsMonthDate.getFullYear(), m = statsMonthDate.getMonth();
+  const lastDay = new Date(y, m + 1, 0);
+  const cur = getMonday(new Date(y, m, 1));
+  const rows = [];
+  while (cur <= lastDay) {
+    const mon = new Date(cur);
     const label = mon.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const sums = {};
     TYPES.forEach(t => sums[t.id] = 0);
@@ -1133,37 +1188,16 @@ function getWeeklyData() {
       });
     }
     rows.push({ label, sums });
-  }
-  return rows;
-}
-
-function getMonthlyData() {
-  const rows = [];
-  const today = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const y = d.getFullYear(), m = d.getMonth();
-    const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-    const sums = {};
-    TYPES.forEach(t => sums[t.id] = 0);
-    Object.entries(workouts).forEach(([key, wList]) => {
-      const kd = parseKey(key);
-      if (kd.getFullYear() === y && kd.getMonth() === m)
-        wList.forEach(w => {
-          if (w.distance && sums.hasOwnProperty(w.type))
-            sums[w.type] += parseFloat(w.distance);
-        });
-    });
-    rows.push({ label, sums });
+    cur.setDate(cur.getDate() + 7);
   }
   return rows;
 }
 
 function renderStats() {
+  updateStatsPeriodLabel();
   const rows = statsPeriod === 'weekly' ? getWeeklyData() : getMonthlyData();
   const labels = rows.map(r => r.label);
 
-  // Build one dataset per type; filter out all-zero types
   const datasets = TYPES
     .map(t => ({
       label: t.label,
@@ -1174,25 +1208,22 @@ function renderStats() {
       pointBorderColor: '#fff',
       pointBorderWidth: 1.5,
       borderWidth: 2.5,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-      tension: 0.35,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0.3,
       fill: false,
     }))
     .filter(ds => ds.data.some(v => v > 0));
 
-  const canvas = document.getElementById('statsChart');
-  const wrap   = canvas.parentElement;
+  const wrap = document.getElementById('statsChart').parentElement;
 
-  // Empty state
   if (datasets.length === 0) {
     if (statsChart) { statsChart.destroy(); statsChart = null; }
-    wrap.innerHTML = '<div class="stats-empty">No mileage data yet — add some workouts</div>';
+    wrap.innerHTML = '<div class="stats-empty">No mileage data for this period</div>';
     document.getElementById('statsLegend').innerHTML = '';
     return;
   }
 
-  // Restore canvas if empty state was shown
   if (!wrap.querySelector('canvas')) {
     wrap.innerHTML = '';
     const c = document.createElement('canvas'); c.id = 'statsChart';
@@ -1213,7 +1244,7 @@ function renderStats() {
         legend: { display: false },
         tooltip: {
           backgroundColor: 'rgba(26,34,64,0.92)',
-          titleFont: { family: 'Bebas Neue', size: 13, letterSpacing: 2 },
+          titleFont: { family: 'Bebas Neue', size: 13 },
           bodyFont:  { family: 'Barlow', size: 12 },
           padding: 10, cornerRadius: 3,
           callbacks: {
@@ -1224,7 +1255,7 @@ function renderStats() {
       scales: {
         x: {
           grid: { color: 'rgba(26,34,64,0.07)' },
-          ticks: { font: { family: 'Barlow', size: 11 }, color: 'rgba(26,34,64,0.45)', maxRotation: 45 }
+          ticks: { font: { family: 'Barlow', size: 11 }, color: 'rgba(26,34,64,0.45)', maxRotation: 40 }
         },
         y: {
           grid: { color: 'rgba(26,34,64,0.07)' },
@@ -1238,7 +1269,6 @@ function renderStats() {
     }
   });
 
-  // Legend
   const legend = document.getElementById('statsLegend');
   legend.innerHTML = '';
   datasets.forEach(ds => {
@@ -1248,6 +1278,34 @@ function renderStats() {
     legend.appendChild(item);
   });
 }
+
+// ── Stats navigation ────────────────────────────────────────────────────────
+
+document.getElementById('statsPrevBtn').addEventListener('click', () => {
+  if (statsPeriod === 'weekly') {
+    statsWeekStart = new Date(statsWeekStart);
+    statsWeekStart.setDate(statsWeekStart.getDate() - 7);
+  } else {
+    statsMonthDate = new Date(statsMonthDate.getFullYear(), statsMonthDate.getMonth() - 1, 1);
+  }
+  renderStats();
+});
+
+document.getElementById('statsNextBtn').addEventListener('click', () => {
+  if (statsPeriod === 'weekly') {
+    statsWeekStart = new Date(statsWeekStart);
+    statsWeekStart.setDate(statsWeekStart.getDate() + 7);
+  } else {
+    statsMonthDate = new Date(statsMonthDate.getFullYear(), statsMonthDate.getMonth() + 1, 1);
+  }
+  renderStats();
+});
+
+document.getElementById('statsNowBtn').addEventListener('click', () => {
+  statsWeekStart = getMonday(new Date());
+  statsMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  renderStats();
+});
 
 // ── View tab switching ──────────────────────────────────────────────────────
 
