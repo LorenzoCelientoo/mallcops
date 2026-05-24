@@ -608,9 +608,10 @@
       background: rgba(255,255,255,0.7); outline: none; transition: border-color 0.18s;
     }
     .seg-input:focus { border-color: var(--red); }
-    .seg-input-dist { width: 72px; }
+    .seg-input-dist { width: 70px; }
     .seg-input-unit { width: 58px; cursor: pointer; }
-    .seg-input-pace { width: 82px; }
+    .seg-input-pace { width: 78px; }
+    .seg-input-time { width: 70px; }
 
     .interval-block {
       border: 1px solid var(--border); border-radius: var(--r);
@@ -660,16 +661,18 @@
     }
     .piece-inp:focus { border-color: var(--red); }
     .piece-dist { width: 52px; }
+    .piece-time { width: 54px; }
     .piece-pace { width: 62px; }
-    .piece-rval { width: 50px; }
+    .piece-rval { width: 48px; }
     .piece-sel {
       padding: 4px 4px; border: 1px solid var(--border); border-radius: 3px;
       font-size: 11px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.06em;
       color: var(--dark); background: rgba(255,255,255,0.85); outline: none; cursor: pointer;
     }
-    .piece-unit   { width: 48px; }
+    .piece-unit   { width: 52px; }
     .piece-effort { width: 58px; }
     .piece-rkind  { width: 62px; }
+    .piece-runit  { width: 46px; }
     .piece-lbl {
       font-size: 10px; font-family: 'Bebas Neue', sans-serif;
       letter-spacing: 0.14em; opacity: 0.35; white-space: nowrap;
@@ -1045,19 +1048,63 @@ function isStructured() {
 
 function defaultBuilderData() {
   const base = {
-    warmup:   { dist: '', unit: 'mi', pace: '' },
-    cooldown: { dist: '', unit: 'mi', pace: '' }
+    warmup:   { dist: '', unit: 'mi', pace: '', time: '' },
+    cooldown: { dist: '', unit: 'mi', pace: '', time: '' }
   };
-  if (selType === 'intervals') return { ...base, blocks: [defaultBlock()] };
-  return { ...base, hard: { dist: '', unit: 'mi', pace: '' } };
+  // Intervals AND long-workout both use the full dynamic block builder
+  if (selType === 'intervals' || (selType === 'long' && selSubtype === 'workout'))
+    return { ...base, blocks: [defaultBlock()] };
+  // Tempo: single hard segment
+  return { ...base, hard: { dist: '', unit: 'mi', pace: '', time: '' } };
 }
 
 function defaultBlock() {
-  return { sets: 4, restBetweenSets: { kind: 'none', val: '' }, pieces: [defaultPiece('hard')] };
+  return { sets: 4, restBetweenSets: { kind: 'none', val: '', restUnit: 'm' }, pieces: [defaultPiece('hard')] };
 }
 
 function defaultPiece(effort) {
-  return { dist: '', unit: 'm', effort: effort || 'hard', pace: '', restAfter: { kind: 'none', val: '' } };
+  return { dist: '', unit: 'm', time: '', effort: effort || 'hard', pace: '',
+           restAfter: { kind: 'none', val: '', restUnit: 'm' } };
+}
+
+// ── Time / pace helpers ────────────────────────────────────────────────────
+
+// Parse "m:ss" or "mm:ss" → total seconds  (used for pace AND piece/segment time)
+function parsePaceSec(str) {
+  if (!str || !str.trim()) return 0;
+  const p = str.trim().split(':').map(s => parseFloat(s) || 0);
+  if (p.length === 3) return p[0]*3600 + p[1]*60 + p[2];
+  if (p.length === 2) return p[0]*60 + p[1];
+  return p[0]*60;
+}
+
+// Parse "h:mm" workout duration → total seconds  (used for simple-form duration)
+function parseDurationSec(str) {
+  if (!str || !str.trim()) return 0;
+  const p = str.trim().split(':').map(s => parseFloat(s) || 0);
+  if (p.length === 3) return p[0]*3600 + p[1]*60 + p[2];
+  if (p.length === 2) return p[0]*3600 + p[1]*60;   // "h:mm" – first part is hours
+  return p[0]*60;
+}
+
+// Format seconds → "m:ss"  (pace & segment time display)
+function formatPaceMS(sec) {
+  if (!sec || sec <= 0) return '';
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// Format seconds → "h:mm"  (simple-form duration display)
+function formatDurationHM(sec) {
+  if (!sec || sec <= 0) return '';
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return `${h}:${String(m).padStart(2,'0')}`;
+}
+
+// Distance in miles from piece time (m:ss) and pace (m:ss/mi)
+function calcDistFromTimePace(timeStr, paceStr) {
+  const t = parsePaceSec(timeStr), p = parsePaceSec(paceStr);
+  return (!t || !p) ? 0 : t / p;
 }
 
 // Show/hide modal sections based on current selType + selSubtype
@@ -1114,14 +1161,14 @@ function renderBuilder(container) {
   // Warmup
   wrap.appendChild(makeSegment('warmup', 'WARMUP', builderData.warmup));
 
-  if (selType === 'intervals') {
+  if (selType === 'intervals' || (selType === 'long' && selSubtype === 'workout')) {
     // Dynamic interval blocks
     const bWrap = document.createElement('div');
     bWrap.style.cssText = 'padding:10px 14px;border-bottom:1px solid var(--border)';
     const bLbl = document.createElement('div');
     bLbl.className = 'builder-seg-title';
     bLbl.style.marginBottom = '8px';
-    bLbl.textContent = 'INTERVAL BLOCKS';
+    bLbl.textContent = (selType === 'long' && selSubtype === 'workout') ? 'WORKOUT BLOCKS' : 'INTERVAL BLOCKS';
     bWrap.appendChild(bLbl);
     if (!builderData.blocks || !builderData.blocks.length) builderData.blocks = [defaultBlock()];
     builderData.blocks.forEach((b, bi) => bWrap.appendChild(makeBlock(b, bi, container)));
@@ -1161,7 +1208,6 @@ function makeSegment(key, title, data) {
   const dI = document.createElement('input');
   dI.type = 'number'; dI.step = '0.1'; dI.min = '0';
   dI.className = 'seg-input seg-input-dist'; dI.placeholder = '0'; dI.value = data.dist || '';
-  dI.addEventListener('input', () => { data.dist = dI.value; updateBuilderTotal(); });
   dF.appendChild(dL); dF.appendChild(dI); fields.appendChild(dF);
 
   // Unit
@@ -1172,7 +1218,6 @@ function makeSegment(key, title, data) {
     const o = document.createElement('option'); o.value = u; o.textContent = u;
     if ((data.unit || 'mi') === u) o.selected = true; uS.appendChild(o);
   });
-  uS.addEventListener('change', () => { data.unit = uS.value; updateBuilderTotal(); });
   uF.appendChild(uL); uF.appendChild(uS); fields.appendChild(uF);
 
   // Pace
@@ -1180,8 +1225,35 @@ function makeSegment(key, title, data) {
   const pL = document.createElement('div'); pL.className = 'seg-field-lbl'; pL.textContent = 'PACE /mi';
   const pI = document.createElement('input');
   pI.type = 'text'; pI.className = 'seg-input seg-input-pace'; pI.placeholder = '9:00'; pI.value = data.pace || '';
-  pI.addEventListener('input', () => { data.pace = pI.value; });
   pF.appendChild(pL); pF.appendChild(pI); fields.appendChild(pF);
+
+  // Time (auto-calc or manual)
+  const tF = document.createElement('div'); tF.className = 'seg-field';
+  const tL = document.createElement('div'); tL.className = 'seg-field-lbl'; tL.textContent = 'TIME';
+  const tI = document.createElement('input');
+  tI.type = 'text'; tI.className = 'seg-input seg-input-time'; tI.placeholder = '0:00'; tI.value = data.time || '';
+  tF.appendChild(tL); tF.appendChild(tI); fields.appendChild(tF);
+
+  // Auto-calc between dist, pace, time (all in their own units/formats)
+  let segAC = false;
+  const recalcSeg = (trigger) => {
+    if (segAC) return; segAC = true;
+    const distMi  = toMiles(dI.value, data.unit || 'mi');
+    const paceSec = parsePaceSec(pI.value);
+    const timeSec = parsePaceSec(tI.value);
+    if (trigger !== tI) {
+      if (distMi > 0 && paceSec > 0) { tI.value = formatPaceMS(Math.round(distMi * paceSec)); data.time = tI.value; }
+    } else {
+      if (distMi > 0 && timeSec > 0)  { pI.value = formatPaceMS(timeSec / distMi); data.pace = pI.value; }
+      else if (paceSec > 0 && timeSec > 0) { dI.value = (timeSec / paceSec).toFixed(2); data.dist = dI.value; updateBuilderTotal(); }
+    }
+    segAC = false;
+  };
+
+  dI.addEventListener('input', () => { data.dist = dI.value; updateBuilderTotal(); recalcSeg(dI); });
+  uS.addEventListener('change', () => { data.unit = uS.value; updateBuilderTotal(); recalcSeg(dI); });
+  pI.addEventListener('input', () => { data.pace = pI.value; recalcSeg(pI); });
+  tI.addEventListener('input', () => { data.time = tI.value; recalcSeg(tI); });
 
   seg.appendChild(fields);
   return seg;
@@ -1207,9 +1279,17 @@ function makeBlock(block, blockIdx, container) {
   });
   const rV = document.createElement('input');
   rV.type = 'text'; rV.className = 'block-rest-inp'; rV.value = block.restBetweenSets?.val || '';
+  // Unit select for jog rest (m / mi)
+  const rUS = document.createElement('select'); rUS.className = 'block-rest-kind';
+  ['m', 'mi'].forEach(u => {
+    const o = document.createElement('option'); o.value = u; o.textContent = u;
+    if ((block.restBetweenSets?.restUnit || 'm') === u) o.selected = true; rUS.appendChild(o);
+  });
   const showRV = () => {
-    rV.style.display = rK.value !== 'none' ? '' : 'none';
-    rV.placeholder = rK.value === 'time' ? '3:00' : '200m';
+    const isNone = rK.value === 'none', isJog = rK.value === 'jog';
+    rV.style.display  = isNone ? 'none' : '';
+    rUS.style.display = isJog  ? '' : 'none';
+    rV.placeholder    = rK.value === 'time' ? '3:00' : '200';
   };
   showRV();
   rK.addEventListener('change', () => {
@@ -1219,6 +1299,10 @@ function makeBlock(block, blockIdx, container) {
   rV.addEventListener('input', () => {
     if (!block.restBetweenSets) block.restBetweenSets = {};
     block.restBetweenSets.val = rV.value; updateBuilderTotal();
+  });
+  rUS.addEventListener('change', () => {
+    if (!block.restBetweenSets) block.restBetweenSets = {};
+    block.restBetweenSets.restUnit = rUS.value; updateBuilderTotal();
   });
 
   const rmB = document.createElement('button');
@@ -1230,7 +1314,7 @@ function makeBlock(block, blockIdx, container) {
   });
 
   head.appendChild(sL); head.appendChild(sI);
-  head.appendChild(rL); head.appendChild(rK); head.appendChild(rV);
+  head.appendChild(rL); head.appendChild(rK); head.appendChild(rV); head.appendChild(rUS);
   head.appendChild(rmB);
   el.appendChild(head);
 
@@ -1252,18 +1336,26 @@ function makeBlock(block, blockIdx, container) {
 function makePiece(piece, pieceIdx, block, container) {
   const row = document.createElement('div'); row.className = 'piece-row';
 
+  // ── Distance input (shown when unit = m or mi) ──
   const dI = document.createElement('input');
   dI.type = 'number'; dI.step = '1'; dI.min = '0';
   dI.className = 'piece-inp piece-dist'; dI.placeholder = '400'; dI.value = piece.dist || '';
   dI.addEventListener('input', () => { piece.dist = dI.value; updateBuilderTotal(); });
 
+  // ── Time input (shown when unit = time) ──
+  const tI = document.createElement('input');
+  tI.type = 'text'; tI.className = 'piece-inp piece-time';
+  tI.placeholder = '2:00'; tI.value = piece.time || '';
+  tI.addEventListener('input', () => { piece.time = tI.value; updateBuilderTotal(); });
+
+  // ── Unit select: m / mi / time ──
   const uS = document.createElement('select'); uS.className = 'piece-sel piece-unit';
-  ['m', 'mi'].forEach(u => {
+  ['m', 'mi', 'time'].forEach(u => {
     const o = document.createElement('option'); o.value = u; o.textContent = u;
     if ((piece.unit || 'm') === u) o.selected = true; uS.appendChild(o);
   });
-  uS.addEventListener('change', () => { piece.unit = uS.value; updateBuilderTotal(); });
 
+  // ── Effort select ──
   const eS = document.createElement('select'); eS.className = 'piece-sel piece-effort';
   [['hard', 'Hard'], ['jog', 'Jog']].forEach(([v, l]) => {
     const o = document.createElement('option'); o.value = v; o.textContent = l;
@@ -1271,11 +1363,25 @@ function makePiece(piece, pieceIdx, block, container) {
   });
   eS.addEventListener('change', () => { piece.effort = eS.value; updateBuilderTotal(); });
 
+  // ── Pace input (shown only when unit = time) ──
   const pI = document.createElement('input');
   pI.type = 'text'; pI.className = 'piece-inp piece-pace';
   pI.placeholder = '6:30'; pI.value = piece.pace || '';
-  pI.addEventListener('input', () => { piece.pace = pI.value; });
+  pI.addEventListener('input', () => { piece.pace = pI.value; updateBuilderTotal(); });
 
+  // ── Toggle dist / time / pace visibility based on unit ──
+  const syncUnit = () => {
+    const isTime = uS.value === 'time';
+    dI.style.display = isTime ? 'none' : '';
+    tI.style.display = isTime ? ''     : 'none';
+    pI.style.display = isTime ? ''     : 'none';
+    piece.unit = uS.value;
+    updateBuilderTotal();
+  };
+  uS.addEventListener('change', syncUnit);
+  syncUnit(); // set initial visibility
+
+  // ── Rest: kind + value + unit (for jog) ──
   const rSep = document.createElement('span'); rSep.className = 'piece-lbl'; rSep.textContent = 'REST:';
 
   const rK = document.createElement('select'); rK.className = 'piece-sel piece-rkind';
@@ -1286,20 +1392,34 @@ function makePiece(piece, pieceIdx, block, container) {
 
   const rV = document.createElement('input');
   rV.type = 'text'; rV.className = 'piece-inp piece-rval'; rV.value = piece.restAfter?.val || '';
-  const showRV = () => {
-    rV.style.display = rK.value !== 'none' ? '' : 'none';
-    rV.placeholder   = rK.value === 'time' ? '2:00' : '200m';
+
+  const rUS = document.createElement('select'); rUS.className = 'piece-sel piece-runit';
+  ['m', 'mi'].forEach(u => {
+    const o = document.createElement('option'); o.value = u; o.textContent = u;
+    if ((piece.restAfter?.restUnit || 'm') === u) o.selected = true; rUS.appendChild(o);
+  });
+
+  const syncRest = () => {
+    const isNone = rK.value === 'none', isJog = rK.value === 'jog';
+    rV.style.display  = isNone ? 'none' : '';
+    rUS.style.display = isJog  ? '' : 'none';
+    rV.placeholder    = rK.value === 'time' ? '2:00' : '200';
   };
-  showRV();
+  syncRest();
   rK.addEventListener('change', () => {
     if (!piece.restAfter) piece.restAfter = {};
-    piece.restAfter.kind = rK.value; showRV(); updateBuilderTotal();
+    piece.restAfter.kind = rK.value; syncRest(); updateBuilderTotal();
   });
   rV.addEventListener('input', () => {
     if (!piece.restAfter) piece.restAfter = {};
-    piece.restAfter.val = rV.value;
+    piece.restAfter.val = rV.value; updateBuilderTotal();
+  });
+  rUS.addEventListener('change', () => {
+    if (!piece.restAfter) piece.restAfter = {};
+    piece.restAfter.restUnit = rUS.value; updateBuilderTotal();
   });
 
+  // ── Remove button ──
   const rmB = document.createElement('button');
   rmB.type = 'button'; rmB.className = 'piece-remove'; rmB.textContent = '✕';
   rmB.addEventListener('click', () => {
@@ -1308,8 +1428,8 @@ function makePiece(piece, pieceIdx, block, container) {
     renderBuilder(container);
   });
 
-  row.appendChild(dI); row.appendChild(uS); row.appendChild(eS); row.appendChild(pI);
-  row.appendChild(rSep); row.appendChild(rK); row.appendChild(rV); row.appendChild(rmB);
+  row.appendChild(dI); row.appendChild(tI); row.appendChild(uS); row.appendChild(eS); row.appendChild(pI);
+  row.appendChild(rSep); row.appendChild(rK); row.appendChild(rV); row.appendChild(rUS); row.appendChild(rmB);
   return row;
 }
 
@@ -1318,19 +1438,23 @@ function calcBuilderMiles() {
   let easy = 0, hard = 0;
   easy += toMiles(builderData.warmup?.dist,   builderData.warmup?.unit   || 'mi');
   easy += toMiles(builderData.cooldown?.dist, builderData.cooldown?.unit || 'mi');
-  if (selType === 'intervals') {
+  const usesBlocks = selType === 'intervals' || (selType === 'long' && selSubtype === 'workout');
+  if (usesBlocks) {
     (builderData.blocks || []).forEach(block => {
       const sets = parseInt(block.sets) || 1;
       (block.pieces || []).forEach(p => {
-        const mi = toMiles(p.dist, p.unit || 'm');
+        // Distance: from time+pace if unit='time', otherwise from dist+unit
+        const mi = p.unit === 'time'
+          ? calcDistFromTimePace(p.time, p.pace)
+          : toMiles(p.dist, p.unit || 'm');
         if (p.effort === 'hard') hard += mi * sets; else easy += mi * sets;
-        // Jog rest after piece = easy miles (value is in meters)
+        // Jog rest after piece = easy miles (use restUnit, default m)
         if (p.restAfter?.kind === 'jog' && p.restAfter.val)
-          easy += (parseFloat(p.restAfter.val) / 1609.344) * sets;
+          easy += toMiles(p.restAfter.val, p.restAfter.restUnit || 'm') * sets;
       });
       // Jog rest between sets = easy miles × (sets − 1)
       if (block.restBetweenSets?.kind === 'jog' && block.restBetweenSets.val)
-        easy += (parseFloat(block.restBetweenSets.val) / 1609.344) * Math.max(0, sets - 1);
+        easy += toMiles(block.restBetweenSets.val, block.restBetweenSets.restUnit || 'm') * Math.max(0, sets - 1);
     });
   } else {
     hard += toMiles(builderData.hard?.dist, builderData.hard?.unit || 'mi');
@@ -1617,6 +1741,30 @@ function renderEffortBtns() {
 function syncToggle() { document.getElementById('toggleTrack').classList.toggle('on', completedOn); }
 
 document.getElementById('completedToggle').addEventListener('click', () => { completedOn = !completedOn; syncToggle(); });
+
+// ── Simple form auto-calc: dist ↔ pace ↔ duration ─────────────────────────
+let simpleAC = false;
+function autoCalcSimple(trigger) {
+  if (simpleAC || document.getElementById('simpleFields').style.display === 'none') return;
+  simpleAC = true;
+  const distEl = document.getElementById('distInput');
+  const paceEl = document.getElementById('paceInput');
+  const durEl  = document.getElementById('durInput');
+  const dist    = parseFloat(distEl.value) || 0;
+  const paceSec = parsePaceSec(paceEl.value);
+  const durSec  = parseDurationSec(durEl.value);
+  if ((trigger === 'dist' || trigger === 'pace') && dist > 0 && paceSec > 0) {
+    // dist + pace → duration
+    durEl.value = formatDurationHM(Math.round(dist * paceSec));
+  } else if (trigger === 'dur' && durSec > 0) {
+    if (dist > 0)      paceEl.value = formatPaceMS(durSec / dist);        // dist + dur → pace
+    else if (paceSec > 0) distEl.value = (durSec / paceSec).toFixed(2);   // pace + dur → dist
+  }
+  simpleAC = false;
+}
+document.getElementById('distInput').addEventListener('input', () => autoCalcSimple('dist'));
+document.getElementById('paceInput').addEventListener('input', () => autoCalcSimple('pace'));
+document.getElementById('durInput').addEventListener('input',  () => autoCalcSimple('dur'));
 
 // ── Save workout ───────────────────────────────────────────────────────────
 
