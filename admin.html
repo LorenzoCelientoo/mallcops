@@ -329,21 +329,29 @@ document.getElementById('newRunnerInput').addEventListener('keydown', function(e
 // ── Load all data ────────────────────────────────────────────────────────────
 
 async function loadAll() {
+  // Step 1: Try to load runner list from config/runners.
+  // This may fail if the Firestore 'config' rule hasn't been added yet —
+  // in that case we fall back to the seed list so the page always renders.
   try {
-    // Load runner list from config (seed if first time)
     const configDoc = await db.collection('config').doc('runners').get();
     if (configDoc.exists) {
-      RUNNERS = configDoc.data().all || SEED_RUNNERS;
+      RUNNERS = configDoc.data().all || [...SEED_RUNNERS];
     } else {
-      // First run — seed from hardcoded list, all visible by default
+      // First run — seed the config doc
       RUNNERS = [...SEED_RUNNERS];
-      await db.collection('config').doc('runners').set({
-        all:     RUNNERS,
-        visible: RUNNERS
-      });
+      try {
+        await db.collection('config').doc('runners').set({ all: RUNNERS, visible: RUNNERS });
+      } catch(writeErr) {
+        console.warn('Could not seed config/runners (add Firestore rule for config collection):', writeErr.message);
+      }
     }
+  } catch(e) {
+    console.warn('config/runners not readable yet — using seed list. Add Firestore rule: match /config/{doc} { allow read: if true; allow write: if request.auth != null; }');
+    RUNNERS = [...SEED_RUNNERS];
+  }
 
-    // Load member data
+  // Step 2: Load member data (members collection is always auth-accessible)
+  try {
     const snap = await db.collection('members').get();
     snap.forEach(doc => {
       memberData[doc.id] = {
@@ -353,8 +361,9 @@ async function loadAll() {
       };
     });
   } catch(e) {
-    console.error('loadAll error:', e);
+    console.error('loadAll members error:', e);
   }
+
   render();
 }
 
@@ -388,7 +397,11 @@ async function syncVisibleConfig() {
     const d = memberData[r];
     return !d || d.showOnPage !== false;
   });
-  await db.collection('config').doc('runners').set({ visible }, { merge: true });
+  try {
+    await db.collection('config').doc('runners').set({ visible }, { merge: true });
+  } catch(e) {
+    console.warn('Could not sync config/runners — add Firestore config rule.');
+  }
 }
 
 // ── Add new runner ───────────────────────────────────────────────────────────
