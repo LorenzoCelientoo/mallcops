@@ -713,15 +713,15 @@
         let visibleRunners = uniqueRunners;
         try {
           const membersSnap = await db.collection('members').get();
-          const visibleSet = new Set();
+          const visibleMap = {};  // name -> priority
           membersSnap.forEach(doc => {
-            if (doc.data().showOnPage !== false) visibleSet.add(doc.id);
+            if (doc.data().showOnPage !== false) {
+              visibleMap[doc.id] = doc.data().priority ?? 50;
+            }
           });
-          if (visibleSet.size > 0) {
-            // Preserve runners.js order, add any extras at end
-            const ordered = (window.RUNNERS || []).filter(r => visibleSet.has(r));
-            visibleSet.forEach(r => { if (!ordered.includes(r)) ordered.push(r); });
-            visibleRunners = ordered;
+          if (Object.keys(visibleMap).length > 0) {
+            visibleRunners = Object.keys(visibleMap)
+              .sort((a, b) => visibleMap[b] - visibleMap[a]);  // highest priority first
           }
         } catch(e) { /* members not publicly readable yet — keep runners.js list */ }
 

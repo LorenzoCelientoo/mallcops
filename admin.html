@@ -241,15 +241,37 @@
     /* ── Icon buttons (edit / delete) ── */
     .icon-btn {
       background: none; border: none; cursor: pointer;
-      font-size: 14px; padding: 4px 6px; border-radius: 3px;
-      opacity: 0.3; transition: opacity 0.15s, background 0.15s;
+      font-size: 18px; padding: 5px 7px; border-radius: 3px;
+      opacity: 0.4; transition: opacity 0.15s, background 0.15s;
       flex-shrink: 0; line-height: 1;
     }
     .icon-btn:hover { opacity: 1; }
     .icon-btn.delete-btn:hover { background: rgba(200,52,26,0.12); }
-    .icon-btn.confirm-btn { opacity: 1; color: var(--green); font-size: 16px; }
-    .icon-btn.cancel-btn  { opacity: 0.5; font-size: 16px; }
+    .icon-btn.confirm-btn { opacity: 1; color: var(--green); font-size: 20px; }
+    .icon-btn.cancel-btn  { opacity: 0.5; font-size: 20px; }
     .icon-btn.cancel-btn:hover { opacity: 1; }
+
+    /* ── Priority input ── */
+    .priority-wrap {
+      display: flex; align-items: center; gap: 5px;
+      flex-shrink: 0;
+    }
+    .priority-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px; letter-spacing: 0.14em;
+      opacity: 0.4;
+    }
+    .priority-input {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px; letter-spacing: 0.1em;
+      width: 48px; text-align: center;
+      padding: 3px 5px; border-radius: 3px;
+      border: 1.5px solid var(--border);
+      background: rgba(255,255,255,0.6);
+      color: var(--dark); outline: none;
+      transition: border-color 0.2s;
+    }
+    .priority-input:focus { border-color: var(--dark); }
 
     /* Inline name edit */
     .name-input {
@@ -381,7 +403,8 @@ async function loadAll() {
       memberData[doc.id] = {
         isCoach:    doc.data().isCoach    || false,
         athletes:   doc.data().athletes   || [],
-        showOnPage: doc.data().showOnPage !== false  // default true
+        showOnPage: doc.data().showOnPage !== false,  // default true
+        priority:   doc.data().priority   ?? 50       // default 50
       };
     });
   } catch(e) {
@@ -400,7 +423,8 @@ async function saveRunner(name) {
     await db.collection('members').doc(name).set({
       isCoach:    memberData[name].isCoach,
       athletes:   memberData[name].athletes,
-      showOnPage: memberData[name].showOnPage
+      showOnPage: memberData[name].showOnPage,
+      priority:   memberData[name].priority ?? 50
     }, { merge: true });
 
     // Keep config/runners.visible in sync
@@ -447,12 +471,12 @@ async function addRunner() {
   try {
     // Create member doc with defaults
     await db.collection('members').doc(name).set({
-      isCoach: false, athletes: [], showOnPage: true
+      isCoach: false, athletes: [], showOnPage: true, priority: 50
     }, { merge: true });
 
     // Update runner list in config
     RUNNERS.push(name);
-    memberData[name] = { isCoach: false, athletes: [], showOnPage: true };
+    memberData[name] = { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
 
     const visible = RUNNERS.filter(r => memberData[r]?.showOnPage !== false);
     await db.collection('config').doc('runners').set({
@@ -486,7 +510,8 @@ async function renameRunner(oldName, newName) {
     await db.collection('members').doc(newName).set({
       isCoach:    old.isCoach,
       athletes:   old.athletes.map(a => a === oldName ? newName : a),
-      showOnPage: old.showOnPage !== false
+      showOnPage: old.showOnPage !== false,
+      priority:   old.priority ?? 50
     }, { merge: true });
     await db.collection('members').doc(oldName).delete();
 
@@ -580,8 +605,15 @@ function render() {
   const list = document.getElementById('runnerList');
   list.innerHTML = '';
 
-  RUNNERS.forEach(name => {
-    const data = memberData[name] || { isCoach: false, athletes: [], showOnPage: true };
+  // Show runners sorted by priority descending (highest first)
+  const sorted = [...RUNNERS].sort((a, b) => {
+    const pa = memberData[a]?.priority ?? 50;
+    const pb = memberData[b]?.priority ?? 50;
+    return pb - pa;
+  });
+
+  sorted.forEach(name => {
+    const data = memberData[name] || { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
 
     const card = document.createElement('div');
     card.className = 'runner-card' + (data.isCoach ? ' is-coach' : '');
@@ -599,6 +631,30 @@ function render() {
     const badge = document.createElement('span');
     badge.className = 'coach-badge';
     badge.textContent = 'COACH';
+
+    // Priority input
+    const prioWrap = document.createElement('div');
+    prioWrap.className = 'priority-wrap';
+    prioWrap.title = 'Priority on front page (1–100, higher = first)';
+    const prioLabel = document.createElement('span');
+    prioLabel.className = 'priority-label';
+    prioLabel.textContent = 'PRIO';
+    const prioInput = document.createElement('input');
+    prioInput.className = 'priority-input';
+    prioInput.type = 'number';
+    prioInput.min = 1; prioInput.max = 100;
+    prioInput.value = data.priority ?? 50;
+    prioInput.addEventListener('change', function() {
+      const val = Math.min(100, Math.max(1, parseInt(this.value) || 50));
+      this.value = val;
+      if (!memberData[name]) memberData[name] = { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
+      memberData[name].priority = val;
+      saveRunner(name);
+      // Re-sort the cards without full re-render (just resort visually)
+      render();
+    });
+    prioWrap.appendChild(prioLabel);
+    prioWrap.appendChild(prioInput);
 
     // Edit button
     const editBtn = document.createElement('button');
@@ -664,6 +720,7 @@ function render() {
 
     head.appendChild(nameEl);
     head.appendChild(badge);
+    head.appendChild(prioWrap);
     head.appendChild(editBtn);
     head.appendChild(pageToggle);
     head.appendChild(coachToggle);
