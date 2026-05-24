@@ -387,12 +387,22 @@
       navLinks.classList.toggle('open');
     });
 
-    // -- Valid runner IDs --
-    const runners = [
-      'Christian','Clayton','Eric','Ignacio','Karl',
-      'Kyle','Lorenzo','Mark','Mike','Stan','Stu','Tom','Will','Luca'
-    ];
-    const validIDs = Object.fromEntries(runners.map(r => [r.toLowerCase() + 'cop', r]));
+    // -- Valid runner IDs (loaded dynamically from Firestore config) --
+    let validIDs = {};
+    const FALLBACK_RUNNERS = ['Christian','Clayton','Eric','Ignacio','Karl',
+      'Kyle','Lorenzo','Mark','Mike','Stan','Stu','Tom','Will','Luca'];
+
+    function buildValidIDs(names) {
+      names.forEach(r => { validIDs[r.toLowerCase() + 'cop'] = r; });
+    }
+
+    // Load runner list — config/runners is publicly readable
+    const runnersReady = db.collection('config').doc('runners').get()
+      .then(doc => {
+        const names = doc.exists ? (doc.data().all || []) : [];
+        buildValidIDs(names.length ? names : FALLBACK_RUNNERS);
+      })
+      .catch(() => buildValidIDs(FALLBACK_RUNNERS));
 
     // -- Helpers --
     let currentRunner = null;
@@ -417,6 +427,7 @@
     // -- Step 1: ID check --
     document.getElementById('step-id').addEventListener('submit', async function(e) {
       e.preventDefault();
+      await runnersReady;
       const val = document.getElementById('input-id').value.trim().toLowerCase();
       clearError('error-id');
 

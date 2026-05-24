@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -708,10 +708,21 @@
 
     async function loadCards() {
       try {
+        // Load visible runners from Firestore config (falls back to runners.js)
+        let visibleRunners = uniqueRunners;
+        try {
+          const configDoc = await db.collection('config').doc('runners').get();
+          if (configDoc.exists && configDoc.data().visible && configDoc.data().visible.length) {
+            visibleRunners = configDoc.data().visible;
+          }
+        } catch(e) { /* keep runners.js fallback */ }
+
+        // Load PBs
         const snap = await db.collection('pbs').get();
         const pbMap = {};
         snap.forEach(doc => { pbMap[doc.id] = doc.data().times || []; });
-        for (const name of uniqueRunners) {
+
+        for (const name of visibleRunners) {
           buildCard(name, pbMap[name] || []);
         }
       } catch(err) {
