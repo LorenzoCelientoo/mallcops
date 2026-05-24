@@ -238,6 +238,30 @@
     .athlete-chip.selected { background: var(--dark); color: var(--bg); border-color: var(--dark); }
     .athlete-chip input[type="checkbox"] { display: none; }
 
+    /* ── Icon buttons (edit / delete) ── */
+    .icon-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; padding: 4px 6px; border-radius: 3px;
+      opacity: 0.3; transition: opacity 0.15s, background 0.15s;
+      flex-shrink: 0; line-height: 1;
+    }
+    .icon-btn:hover { opacity: 1; }
+    .icon-btn.delete-btn:hover { background: rgba(200,52,26,0.12); }
+    .icon-btn.confirm-btn { opacity: 1; color: var(--green); font-size: 16px; }
+    .icon-btn.cancel-btn  { opacity: 0.5; font-size: 16px; }
+    .icon-btn.cancel-btn:hover { opacity: 1; }
+
+    /* Inline name edit */
+    .name-input {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 0.14em;
+      background: rgba(255,255,255,0.8);
+      border: 1.5px solid var(--dark);
+      border-radius: 3px; color: var(--dark);
+      padding: 1px 8px; outline: none;
+      width: 140px; flex-shrink: 1;
+    }
+
     /* Loading state */
     .loading-msg {
       font-family: 'Bebas Neue', sans-serif;
@@ -446,6 +470,110 @@ async function addRunner() {
   }
 }
 
+// ── Rename runner ────────────────────────────────────────────────────────────
+
+async function renameRunner(oldName, newName) {
+  newName = newName.trim();
+  newName = newName.charAt(0).toUpperCase() + newName.slice(1);
+  if (!newName || newName === oldName) { render(); return; }
+  if (RUNNERS.includes(newName)) { alert(newName + ' already exists.'); render(); return; }
+
+  setSaveStatus('Renaming…');
+  try {
+    const old = memberData[oldName] || { isCoach: false, athletes: [], showOnPage: true };
+
+    // Copy members doc to new name, delete old
+    await db.collection('members').doc(newName).set({
+      isCoach:    old.isCoach,
+      athletes:   old.athletes.map(a => a === oldName ? newName : a),
+      showOnPage: old.showOnPage !== false
+    }, { merge: true });
+    await db.collection('members').doc(oldName).delete();
+
+    // Copy workouts doc
+    try {
+      const w = await db.collection('workouts').doc(oldName).get();
+      if (w.exists) {
+        await db.collection('workouts').doc(newName).set(w.data());
+        await db.collection('workouts').doc(oldName).delete();
+      }
+    } catch(e) {}
+
+    // Copy pbs doc
+    try {
+      const p = await db.collection('pbs').doc(oldName).get();
+      if (p.exists) {
+        await db.collection('pbs').doc(newName).set(p.data());
+        await db.collection('pbs').doc(oldName).delete();
+      }
+    } catch(e) {}
+
+    // Update any coach's athletes list that referenced old name
+    for (const r of RUNNERS) {
+      if (r !== oldName && memberData[r]?.athletes?.includes(oldName)) {
+        memberData[r].athletes = memberData[r].athletes.map(a => a === oldName ? newName : a);
+        await db.collection('members').doc(r).set({ athletes: memberData[r].athletes }, { merge: true });
+      }
+    }
+
+    // Update local state
+    const idx = RUNNERS.indexOf(oldName);
+    if (idx !== -1) RUNNERS[idx] = newName;
+    memberData[newName] = { ...old, athletes: old.athletes.map(a => a === oldName ? newName : a) };
+    delete memberData[oldName];
+
+    // Sync config
+    await syncVisibleConfig();
+    try { await db.collection('config').doc('runners').set({ all: RUNNERS }, { merge: true }); } catch(e) {}
+
+    setSaveStatus('Renamed ✓');
+    setTimeout(() => setSaveStatus(''), 2000);
+  } catch(e) {
+    setSaveStatus('⚠ Error'); console.error('rename error:', e);
+  }
+  render();
+}
+
+// ── Delete runner ─────────────────────────────────────────────────────────────
+
+async function deleteRunner(name) {
+  if (!confirm('Remove ' + name + ' from Mall Cops?\n\nThis permanently deletes their profile, workouts and PBs.')) return;
+
+  setSaveStatus('Deleting…');
+  try {
+    // Remove from other coaches' athlete lists first
+    for (const r of RUNNERS) {
+      if (r !== name && memberData[r]?.athletes?.includes(name)) {
+        memberData[r].athletes = memberData[r].athletes.filter(a => a !== name);
+        await db.collection('members').doc(r).set({ athletes: memberData[r].athletes }, { merge: true });
+      }
+    }
+
+    // Delete Firestore docs
+    await db.collection('members').doc(name).delete();
+    try { await db.collection('workouts').doc(name).delete(); } catch(e) {}
+    try { await db.collection('pbs').doc(name).delete(); } catch(e) {}
+
+    // Update local state
+    RUNNERS = RUNNERS.filter(r => r !== name);
+    delete memberData[name];
+
+    // Sync config
+    try {
+      await db.collection('config').doc('runners').set({
+        all:     RUNNERS,
+        visible: RUNNERS.filter(r => memberData[r]?.showOnPage !== false)
+      }, { merge: true });
+    } catch(e) {}
+
+    setSaveStatus('Deleted ✓');
+    setTimeout(() => setSaveStatus(''), 2000);
+  } catch(e) {
+    setSaveStatus('⚠ Error'); console.error('delete error:', e);
+  }
+  render();
+}
+
 // ── Render ───────────────────────────────────────────────────────────────────
 
 function render() {
@@ -463,6 +591,7 @@ function render() {
     const head = document.createElement('div');
     head.className = 'runner-head';
 
+    // Name — click pencil to edit inline
     const nameEl = document.createElement('div');
     nameEl.className = 'runner-name';
     nameEl.textContent = name.toUpperCase();
@@ -470,6 +599,43 @@ function render() {
     const badge = document.createElement('span');
     badge.className = 'coach-badge';
     badge.textContent = 'COACH';
+
+    // Edit button
+    const editBtn = document.createElement('button');
+    editBtn.className = 'icon-btn edit-btn';
+    editBtn.title = 'Rename';
+    editBtn.textContent = '✏';
+    editBtn.addEventListener('click', () => {
+      // Swap name div for an input + confirm/cancel
+      const input = document.createElement('input');
+      input.className = 'name-input';
+      input.value = name;
+      input.maxLength = 30;
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'icon-btn confirm-btn';
+      confirmBtn.textContent = '✓';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'icon-btn cancel-btn';
+      cancelBtn.textContent = '✕';
+      head.replaceChild(input, nameEl);
+      head.replaceChild(confirmBtn, editBtn);
+      head.replaceChild(cancelBtn, deleteBtn);
+      input.focus(); input.select();
+      const doRename = () => renameRunner(name, input.value);
+      confirmBtn.addEventListener('click', doRename);
+      cancelBtn.addEventListener('click', render);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') doRename();
+        if (e.key === 'Escape') render();
+      });
+    });
+
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'icon-btn delete-btn';
+    deleteBtn.title = 'Delete runner';
+    deleteBtn.textContent = '🗑';
+    deleteBtn.addEventListener('click', () => deleteRunner(name));
 
     // Coach toggle
     const coachToggle = document.createElement('div');
@@ -498,8 +664,10 @@ function render() {
 
     head.appendChild(nameEl);
     head.appendChild(badge);
+    head.appendChild(editBtn);
     head.appendChild(pageToggle);
     head.appendChild(coachToggle);
+    head.appendChild(deleteBtn);
 
     // ── Athletes section ──
     const athleteSection = document.createElement('div');
