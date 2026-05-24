@@ -396,10 +396,11 @@
       names.forEach(r => { validIDs[r.toLowerCase() + 'cop'] = r; });
     }
 
-    // Load runner list — config/runners is publicly readable
-    const runnersReady = db.collection('config').doc('runners').get()
-      .then(doc => {
-        const names = doc.exists ? (doc.data().all || []) : [];
+    // Load runner list from members collection (public read) — falls back to hardcoded
+    const runnersReady = db.collection('members').get()
+      .then(snap => {
+        const names = [];
+        snap.forEach(doc => names.push(doc.id));
         buildValidIDs(names.length ? names : FALLBACK_RUNNERS);
       })
       .catch(() => buildValidIDs(FALLBACK_RUNNERS));

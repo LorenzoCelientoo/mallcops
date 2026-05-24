@@ -708,14 +708,22 @@
 
     async function loadCards() {
       try {
-        // Load visible runners from Firestore config (falls back to runners.js)
+        // Load visible runners from members collection (showOnPage field).
+        // Falls back to runners.js order if members isn't readable yet.
         let visibleRunners = uniqueRunners;
         try {
-          const configDoc = await db.collection('config').doc('runners').get();
-          if (configDoc.exists && configDoc.data().visible && configDoc.data().visible.length) {
-            visibleRunners = configDoc.data().visible;
+          const membersSnap = await db.collection('members').get();
+          const visibleSet = new Set();
+          membersSnap.forEach(doc => {
+            if (doc.data().showOnPage !== false) visibleSet.add(doc.id);
+          });
+          if (visibleSet.size > 0) {
+            // Preserve runners.js order, add any extras at end
+            const ordered = (window.RUNNERS || []).filter(r => visibleSet.has(r));
+            visibleSet.forEach(r => { if (!ordered.includes(r)) ordered.push(r); });
+            visibleRunners = ordered;
           }
-        } catch(e) { /* keep runners.js fallback */ }
+        } catch(e) { /* members not publicly readable yet — keep runners.js list */ }
 
         // Load PBs
         const snap = await db.collection('pbs').get();
@@ -726,7 +734,6 @@
           buildCard(name, pbMap[name] || []);
         }
       } catch(err) {
-        // fallback: show cards with no times
         for (const name of uniqueRunners) {
           buildCard(name, []);
         }
