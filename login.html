@@ -443,20 +443,22 @@
       // members collection is publicly readable (allow read: if true rule).
       try {
         const doc = await db.collection('members').doc(currentRunner).get();
-        const hasAccount = doc.exists && doc.data().hasAccount === true;
-        if (hasAccount) {
-          // Returning user -> login form
-          document.getElementById('greeting-login').textContent = currentRunner;
-          document.getElementById('input-password').value = '';
-          clearError('error-login');
-          showStep('step-login');
-        } else {
-          // New user -> create password form
+        // Only show create form when admin explicitly set hasAccount: false.
+        // undefined / true / missing doc all go to login (safe for existing users).
+        const isNewUser = doc.exists && doc.data().hasAccount === false;
+        if (isNewUser) {
+          // New runner added by admin -> create password form
           document.getElementById('greeting-create').textContent = currentRunner;
           document.getElementById('input-create').value = '';
           document.getElementById('input-confirm').value = '';
           clearError('error-create');
           showStep('step-create');
+        } else {
+          // Returning user -> login form
+          document.getElementById('greeting-login').textContent = currentRunner;
+          document.getElementById('input-password').value = '';
+          clearError('error-login');
+          showStep('step-login');
         }
       } catch(e) {
         // Can't read members (rule not yet set) — default to login form
