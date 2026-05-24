@@ -1439,6 +1439,8 @@ function renderModalForm() {
     simpleFld.style.display = '';
     bldrEl.style.display    = 'none';
     if (sumEl) sumEl.style.display = 'none';
+    const tplRow = document.getElementById('loadTemplateRow');
+    if (tplRow) tplRow.style.display = 'none';
     builderData = null;
   }
 
