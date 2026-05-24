@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -356,6 +356,7 @@
 
   <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
@@ -369,7 +370,13 @@
       appId: "1:257434166770:web:8e4f066b20261a0e34b76b"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+
+    // -- If already signed in, skip straight to members --
+    auth.onAuthStateChanged(function(u) {
+      if (u) window.location.href = 'members.html';
+    });
 
     // -- Nav toggle --
     const toggle = document.getElementById('nav-toggle');
@@ -418,12 +425,11 @@
       }
 
       currentRunner = validIDs[val];
+      const email = currentRunner.toLowerCase() + '@mallcops.run';
 
-      // Check Firestore for existing password
       try {
-        const doc = await db.collection('members').doc(currentRunner).get();
-
-        if (doc.exists && doc.data().password) {
+        const methods = await auth.fetchSignInMethodsForEmail(email);
+        if (methods.length > 0) {
           // Returning user
           document.getElementById('greeting-login').textContent = currentRunner;
           document.getElementById('input-password').value = '';
@@ -449,8 +455,8 @@
       const pw2 = document.getElementById('input-confirm').value;
       clearError('error-create');
 
-      if (pw.length < 4) {
-        setError('error-create', 'Password must be at least 4 characters.');
+      if (pw.length < 6) {
+        setError('error-create', 'Password must be at least 6 characters.');
         return;
       }
       if (pw !== pw2) {
@@ -459,11 +465,12 @@
       }
 
       try {
-        await db.collection('members').doc(currentRunner).set({ password: pw });
-        sessionStorage.setItem('mallcops_user', currentRunner);
+        const email = currentRunner.toLowerCase() + '@mallcops.run';
+        const cred  = await auth.createUserWithEmailAndPassword(email, pw);
+        await cred.user.updateProfile({ displayName: currentRunner });
         window.location.href = 'members.html';
       } catch(err) {
-        setError('error-create', 'Could not save password. Try again.');
+        setError('error-create', 'Could not create account. Try again.');
       }
     });
 
@@ -474,16 +481,12 @@
       clearError('error-login');
 
       try {
-        const doc = await db.collection('members').doc(currentRunner).get();
-        if (doc.exists && doc.data().password === pw) {
-          sessionStorage.setItem('mallcops_user', currentRunner);
-          window.location.href = 'members.html';
-        } else {
-          setError('error-login', 'Wrong password. Try again.');
-          document.getElementById('input-password').value = '';
-        }
+        const email = currentRunner.toLowerCase() + '@mallcops.run';
+        await auth.signInWithEmailAndPassword(email, pw);
+        window.location.href = 'members.html';
       } catch(err) {
-        setError('error-login', 'Connection error. Please try again.');
+        setError('error-login', 'Wrong password. Try again.');
+        document.getElementById('input-password').value = '';
       }
     });
 

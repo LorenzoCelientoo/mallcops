@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +6,7 @@
   <title>Admin – Mall Cops</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     :root {
@@ -216,12 +217,7 @@
 </head>
 <body>
 
-<!-- Auth guard – Lorenzo only -->
-<script>
-  const currentUser = sessionStorage.getItem('mallcops_user');
-  if (!currentUser) window.location.href = 'login.html';
-  if (currentUser !== 'Lorenzo') window.location.href = 'members.html';
-</script>
+
 
 <script>
   const firebaseConfig = {
@@ -233,7 +229,8 @@
     appId: "1:257434166770:web:8e4f066b20261a0e34b76b"
   };
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  const db   = firebase.firestore();
+  const auth = firebase.auth();
 </script>
 
 <div class="topbar"></div>
@@ -379,7 +376,12 @@ function render() {
 
 // ── Boot ────────────────────────────────────────────────────────────────────
 
-loadAll();
+auth.onAuthStateChanged(function(authUser) {
+  if (!authUser) { window.location.href = 'login.html'; return; }
+  const name = authUser.displayName || '';
+  if (name !== 'Lorenzo') { window.location.href = 'members.html'; return; }
+  loadAll();
+});
 </script>
 </body>
 </html>
