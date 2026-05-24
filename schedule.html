@@ -466,20 +466,49 @@
     }
 
     // Load and display races from Firestore sorted by date
+    // Only shows races for runners marked showOnPage !== false in members
     async function loadSchedule() {
       try {
+        // 1. Get visible runners from members (publicly readable)
+        let visibleRunners = null;
+        try {
+          const membersSnap = await db.collection('members').get();
+          visibleRunners = new Set();
+          membersSnap.forEach(doc => {
+            if (doc.data().showOnPage !== false) visibleRunners.add(doc.id);
+          });
+        } catch(e) {
+          visibleRunners = null; // members not readable yet — show all
+        }
+
+        // 2. Load races
         await seedIfEmpty();
         const snapshot = await db.collection('races').get();
         if (snapshot.empty) {
           list.innerHTML = '<p class="schedule-empty">No races scheduled yet</p>';
           return;
         }
+
+        // 3. Filter by visible runners, sort by date
         const races = [];
-        snapshot.forEach(doc => races.push(doc.data()));
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (!visibleRunners || visibleRunners.has(data.runner)) {
+            races.push(data);
+          }
+        });
+
+        if (!races.length) {
+          list.innerHTML = '<p class="schedule-empty">No races scheduled yet</p>';
+          return;
+        }
+
         races.sort((a, b) => toSortKey(a).localeCompare(toSortKey(b)));
         races.forEach(({ runner, race, date, type }) => renderRow(runner, race, date, type));
+
       } catch(err) {
-        list.innerHTML = '<p class="schedule-empty">Could not load schedule</p>';
+        list.innerHTML = '<p class="schedule-empty">Could not load schedule. Check connection.</p>';
+        console.error('Schedule load error:', err);
       }
     }
 
