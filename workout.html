@@ -358,7 +358,8 @@
       .app { grid-template-columns: 1fr; gap: 18px; }
       .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .sidebar .card:nth-child(1),
-      .sidebar .card:nth-child(3) { grid-column: 1 / -1; }
+      .sidebar .card:nth-child(3),
+      .sidebar .card:nth-child(4) { grid-column: 1 / -1; }
     }
 
     /* ── MOBILE (≤ 600px) ── */
@@ -712,8 +713,83 @@
       .seg-fields { gap: 6px; }
       .seg-input-dist { width: 64px; }
       .seg-input-pace { width: 72px; }
-      .piece-row { gap: 4px; }
+      .piece-row-1, .piece-row-2 { gap: 4px; }
     }
+
+    /* ── Wider modal for structured workouts ── */
+    .modal.wide { width: 680px; }
+
+    /* ── Piece card (two-row layout + color coding) ── */
+    .piece-card {
+      padding: 8px 10px 7px;
+      border-bottom: 1px solid rgba(26,34,64,0.07);
+      transition: background 0.15s;
+    }
+    .piece-card:last-child { border-bottom: none; }
+    .piece-card.hard { background: rgba(200,52,26,0.06); }
+    .piece-card.jog  { background: rgba(46,125,91,0.06); }
+    .piece-row-1 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
+    .piece-row-2 { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; opacity: 0.75; }
+    .piece-row-2 .piece-lbl { font-size: 10px; }
+
+    /* ── Builder summary ── */
+    .builder-summary {
+      font-family: 'Barlow', sans-serif; font-size: 12px; line-height: 1.7;
+      color: rgba(26,34,64,0.62); background: rgba(255,255,255,0.45);
+      border: 1px solid var(--border); border-radius: var(--r);
+      padding: 10px 14px; margin-bottom: 14px;
+    }
+    .builder-summary strong {
+      font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.16em; color: var(--dark);
+    }
+    .bs-hard { color: var(--red); font-weight: 600; }
+    .bs-easy { color: #2E7D5B; font-weight: 600; }
+    .bs-line { display: block; }
+
+    /* ── Template sidebar card ── */
+    .template-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: var(--r);
+      background: var(--tan); border: 1px solid rgba(26,34,64,0.08);
+      margin-bottom: 5px; cursor: pointer; transition: background 0.2s;
+      box-shadow: 1px 2px 0 rgba(26,34,64,0.08);
+    }
+    .template-item:hover { background: var(--dark); }
+    .template-item:hover .template-item-name,
+    .template-item:hover .template-item-type { color: var(--bg); opacity: 1; }
+    .template-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .template-item-name {
+      font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.08em;
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .template-item-type { font-size: 10px; font-weight: 600; color: rgba(26,34,64,0.4); text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+    .template-del {
+      background: none; border: none; color: rgba(200,52,26,0.4);
+      cursor: pointer; font-size: 13px; padding: 0 2px; transition: color 0.15s; flex-shrink: 0;
+    }
+    .template-del:hover { color: var(--red); }
+    .new-template-btn {
+      width: 100%; padding: 7px; margin-top: 6px;
+      background: none; border: 1.5px dashed rgba(26,34,64,0.2); border-radius: var(--r);
+      font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.18em;
+      color: rgba(26,34,64,0.38); cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    .new-template-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Load-template select in modal ── */
+    .load-tpl-wrap {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .load-tpl-lbl {
+      font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.16em;
+      color: rgba(26,34,64,0.38); white-space: nowrap;
+    }
+    .load-tpl-sel {
+      flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: 3px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.08em;
+      background: rgba(255,255,255,0.6); color: var(--dark); outline: none; cursor: pointer;
+    }
+    .load-tpl-sel:focus { border-color: var(--red); }
   </style>
 </head>
 <body>
@@ -804,6 +880,12 @@
       <div class="upcoming-list" id="upcomingList"></div>
     </div>
 
+    <div class="card" id="templatesCard">
+      <div class="card-title">Templates</div>
+      <div id="templatesList"></div>
+      <button class="new-template-btn" id="newTemplateBtn" type="button">+ NEW TEMPLATE</button>
+    </div>
+
   </div>
 </div>
 
@@ -837,6 +919,12 @@
       </div>
       <button class="close-btn" id="closeBtn">&#10005;</button>
     </div>
+    <!-- Template name (only shown in template mode) -->
+    <div class="field" id="templateNameField" style="display:none">
+      <label class="field-label" for="templateNameInput">Template Name</label>
+      <input type="text" class="form-input" id="templateNameInput" placeholder="e.g. Track Tuesday, MP Long Run…">
+    </div>
+
     <div class="field">
       <div class="field-label">Workout Type</div>
       <div class="type-pills" id="typePills"></div>
@@ -845,6 +933,14 @@
     <div class="field" id="lrSubtypeField" style="display:none">
       <div class="field-label">Long Run Type</div>
       <div class="lr-subtype-row" id="lrSubtypeRow"></div>
+    </div>
+
+    <!-- Load template row (shown in builder mode when templates exist) -->
+    <div class="load-tpl-wrap" id="loadTemplateRow" style="display:none">
+      <span class="load-tpl-lbl">TEMPLATE:</span>
+      <select class="load-tpl-sel" id="templateSelect">
+        <option value="">↓ load a template…</option>
+      </select>
     </div>
 
     <!-- Simple fields: dist · pace · duration (hidden for structured workouts) -->
@@ -866,17 +962,20 @@
     </div>
 
     <!-- Builder section – shown for tempo / intervals / workout long run -->
-    <div id="builderSection" style="display:none;margin-bottom:16px"></div>
+    <div id="builderSection" style="display:none;margin-bottom:8px"></div>
 
-    <div class="field">
+    <!-- Live workout summary -->
+    <div class="builder-summary" id="builderSummary" style="display:none"></div>
+
+    <div class="field" id="effortField">
       <div class="field-label">Perceived Effort</div>
       <div class="effort-row" id="effortRow"></div>
     </div>
-    <div class="field">
+    <div class="field" id="notesField">
       <label class="field-label" for="notesInput">Notes</label>
       <textarea class="form-textarea" id="notesInput" placeholder="How did it go? Anything to note…"></textarea>
     </div>
-    <div class="field">
+    <div class="field" id="completedField">
       <div class="completed-toggle" id="completedToggle">
         <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
         <span class="toggle-label">Mark as completed</span>
@@ -932,6 +1031,9 @@ let selSubtype  = 'easy';   // for long run: 'easy' | 'workout'
 let builderData = null;     // current builder state (null = not a structured workout)
 let viewingAs = currentUser;   // whose plan is on screen (self or assigned athlete)
 let isCoach   = false;
+let templates        = [];     // [{ id, name, type, subtype, structure }]
+let templateMode     = false;  // true when modal is creating/editing a template
+let editingTemplateId = null;  // id of template being edited (null = new)
 
 // ── Header ─────────────────────────────────────────────────────────────────
 
@@ -950,14 +1052,16 @@ function setSaveStatus(msg) {
 // ── Firestore load/save ────────────────────────────────────────────────────
 
 async function loadWorkoutsFor(name) {
-  workouts = {};
+  workouts  = {};
+  templates = [];
   document.getElementById('raceDateInput').value = '';
   document.getElementById('raceCountdownText').textContent = '';
   try {
     const doc = await db.collection('workouts').doc(name).get();
     if (doc.exists) {
       const d = doc.data();
-      workouts = d.data || {};
+      workouts  = d.data      || {};
+      templates = d.templates || [];
       if (d.raceDate) {
         document.getElementById('raceDateInput').value = d.raceDate;
         updateRaceCountdown(d.raceDate);
@@ -968,6 +1072,7 @@ async function loadWorkoutsFor(name) {
     console.error('Load error:', e);
     throw e;
   }
+  renderTemplatesCard();
 }
 
 async function load() {
@@ -1006,6 +1111,7 @@ function save() {
   db.collection('workouts').doc(viewingAs).set({
     data: workouts,
     raceDate,
+    templates,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   })
   .then(() => {
@@ -1016,6 +1122,205 @@ function save() {
     setSaveStatus('⚠ Error');
     console.error('Save error:', e);
   });
+}
+
+// ── Template persistence ───────────────────────────────────────────────────
+
+function saveTemplates() {
+  setSaveStatus('Saving…');
+  db.collection('workouts').doc(viewingAs).set({ templates }, { merge: true })
+    .then(() => { setSaveStatus('Saved ✓'); setTimeout(() => setSaveStatus(''), 2000); })
+    .catch(e => { setSaveStatus('⚠ Error'); console.error('saveTemplates error:', e); });
+}
+
+// ── Templates sidebar card ─────────────────────────────────────────────────
+
+function renderTemplatesCard() {
+  const list = document.getElementById('templatesList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!templates.length) {
+    list.innerHTML = '<div class="empty-msg">No templates yet</div>';
+    return;
+  }
+  templates.forEach(tpl => {
+    const ti   = typeInfo(tpl.type);
+    const item = document.createElement('div'); item.className = 'template-item';
+    const dot  = document.createElement('div'); dot.className = 'template-dot'; dot.style.background = ti.color;
+    const name = document.createElement('div'); name.className = 'template-item-name'; name.textContent = tpl.name || 'Untitled';
+    const type = document.createElement('div'); type.className = 'template-item-type'; type.textContent = ti.label;
+    const del  = document.createElement('button'); del.className = 'template-del'; del.textContent = '✕'; del.type = 'button'; del.title = 'Delete template';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm(`Delete template "${tpl.name || 'Untitled'}"?`)) {
+        templates = templates.filter(t => t.id !== tpl.id);
+        saveTemplates(); renderTemplatesCard();
+      }
+    });
+    item.appendChild(dot); item.appendChild(name); item.appendChild(type); item.appendChild(del);
+    item.addEventListener('click', () => openModalForTemplate(tpl.id));
+    list.appendChild(item);
+  });
+}
+
+// ── Open modal in template-editing mode ───────────────────────────────────
+
+function openModalForTemplate(templateId) {
+  templateMode      = true;
+  editingTemplateId = templateId;
+  const tpl = templateId ? templates.find(t => t.id === templateId) : null;
+
+  selDate = null; selId = null;
+  document.getElementById('modalTitle').textContent   = tpl ? 'Edit Template' : 'New Template';
+  document.getElementById('modalDateStr').textContent = 'Saved as reusable template';
+  document.getElementById('deleteBtn').style.display  = tpl ? '' : 'none';
+
+  selType     = tpl ? tpl.type              : 'intervals';
+  selSubtype  = tpl ? (tpl.subtype || 'easy') : 'easy';
+  selEffort   = null;
+  completedOn = false;
+  builderData = tpl?.structure ? JSON.parse(JSON.stringify(tpl.structure)) : null;
+
+  document.getElementById('distInput').value         = '';
+  document.getElementById('paceInput').value         = '';
+  document.getElementById('durInput').value          = '';
+  document.getElementById('notesInput').value        = '';
+  document.getElementById('templateNameInput').value = tpl?.name || '';
+
+  // Show name field, hide workout-specific fields
+  document.getElementById('templateNameField').style.display = '';
+  document.getElementById('effortField').style.display       = 'none';
+  document.getElementById('notesField').style.display        = 'none';
+  document.getElementById('completedField').style.display    = 'none';
+  document.getElementById('saveBtn').textContent             = tpl ? 'Update Template' : 'Save Template';
+
+  renderTypePills(); syncToggle();
+  document.getElementById('overlay').classList.add('open');
+}
+
+// ── Save / update template from modal ─────────────────────────────────────
+
+function saveTemplateFromModal() {
+  const nameEl = document.getElementById('templateNameInput');
+  const name   = nameEl.value.trim();
+  if (!name)        { nameEl.focus(); return; }
+  if (!builderData) { alert('Please select a structured workout type and build the workout first.'); return; }
+
+  const obj = {
+    id:        editingTemplateId || genId(),
+    name,
+    type:      selType,
+    subtype:   selType === 'long' ? selSubtype : null,
+    structure: JSON.parse(JSON.stringify(builderData))
+  };
+
+  if (editingTemplateId) {
+    const idx = templates.findIndex(t => t.id === editingTemplateId);
+    if (idx !== -1) templates[idx] = obj; else templates.push(obj);
+  } else {
+    templates.push(obj);
+  }
+  saveTemplates(); renderTemplatesCard(); closeModal();
+}
+
+// ── Load-template select row in modal ─────────────────────────────────────
+
+function renderLoadTemplateRow() {
+  const row = document.getElementById('loadTemplateRow');
+  const sel = document.getElementById('templateSelect');
+  if (!row || !sel) return;
+  const matching = templates.filter(t => {
+    if (t.type !== selType) return false;
+    if (selType === 'long' && t.subtype !== selSubtype) return false;
+    return t.structure != null;
+  });
+  if (!matching.length) { row.style.display = 'none'; return; }
+  sel.innerHTML = '<option value="">↓ load a template…</option>';
+  matching.forEach(t => {
+    const o = document.createElement('option'); o.value = t.id; o.textContent = t.name;
+    sel.appendChild(o);
+  });
+  row.style.display = '';
+}
+
+// ── Builder summary helpers ────────────────────────────────────────────────
+
+function formatDistDisplay(val, unit) {
+  const n = parseFloat(val);
+  if (!n) return '';
+  if (unit === 'm')  return `${Math.round(n)}m`;
+  return `${n % 1 === 0 ? n : parseFloat(n.toFixed(2))}mi`;
+}
+
+function updateBuilderSummary() {
+  const sumEl = document.getElementById('builderSummary');
+  if (!sumEl || !builderData) { if (sumEl) sumEl.style.display = 'none'; return; }
+  const lines = [];
+
+  // Warmup
+  const wu = builderData.warmup;
+  if (wu && (wu.dist || wu.time)) {
+    const d = formatDistDisplay(wu.dist, wu.unit || 'mi');
+    const t = wu.time ? `(${wu.time})` : '';
+    const p = wu.pace ? `@ ${wu.pace}/mi` : '';
+    lines.push(`<span class="bs-line"><strong>WU:</strong> <span class="bs-easy">${[d, p, t].filter(Boolean).join(' ')}</span></span>`);
+  }
+
+  const usesBlocks = selType === 'intervals' || (selType === 'long' && selSubtype === 'workout');
+  if (usesBlocks) {
+    (builderData.blocks || []).forEach((block, bi) => {
+      const sets   = parseInt(block.sets) || 1;
+      const pieces = block.pieces || [];
+      const pieceDescs = pieces.map(p => {
+        let d = '';
+        if (p.unit === 'time') {
+          d = p.time || '—';
+          if (p.pace) d += ` @ ${p.pace}/mi`;
+        } else {
+          d = formatDistDisplay(p.dist, p.unit || 'm') || '—';
+          if (p.pace) d += ` @ ${p.pace}/mi`;
+        }
+        const cls  = p.effort === 'hard' ? 'bs-hard' : 'bs-easy';
+        const rest = (p.restAfter?.kind && p.restAfter.kind !== 'none' && p.restAfter?.val)
+          ? ` + ${p.restAfter.kind === 'jog'
+              ? formatDistDisplay(p.restAfter.val, p.restAfter.restUnit || 'm') + ' jog'
+              : p.restAfter.val + ' rest'}`
+          : '';
+        return `<span class="${cls}">${d}</span>${rest}`;
+      });
+      let setRest = '';
+      const rbs = block.restBetweenSets;
+      if (rbs?.kind && rbs.kind !== 'none' && rbs.val) {
+        setRest = ` | ${rbs.kind === 'jog'
+          ? formatDistDisplay(rbs.val, rbs.restUnit || 'm') + ' jog btw sets'
+          : rbs.val + ' btw sets'}`;
+      }
+      lines.push(`<span class="bs-line"><strong>Block ${bi + 1}:</strong> ${sets}×(${pieceDescs.join(' / ')})${setRest}</span>`);
+    });
+  } else if (builderData.hard) {
+    const h   = builderData.hard;
+    const d   = formatDistDisplay(h.dist, h.unit || 'mi');
+    const t   = h.time ? `(${h.time})` : '';
+    const p   = h.pace ? `@ ${h.pace}/mi` : '';
+    const lbl = selType === 'tempo' ? 'Tempo' : 'MP Block';
+    lines.push(`<span class="bs-line"><strong>${lbl}:</strong> <span class="bs-hard">${[d, p, t].filter(Boolean).join(' ') || '—'}</span></span>`);
+  }
+
+  // Cooldown
+  const cd = builderData.cooldown;
+  if (cd && (cd.dist || cd.time)) {
+    const d = formatDistDisplay(cd.dist, cd.unit || 'mi');
+    const t = cd.time ? `(${cd.time})` : '';
+    const p = cd.pace ? `@ ${cd.pace}/mi` : '';
+    lines.push(`<span class="bs-line"><strong>CD:</strong> <span class="bs-easy">${[d, p, t].filter(Boolean).join(' ')}</span></span>`);
+  }
+
+  if (lines.length) {
+    sumEl.innerHTML = lines.join('');
+    sumEl.style.display = '';
+  } else {
+    sumEl.style.display = 'none';
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -1112,7 +1417,11 @@ function renderModalForm() {
   const lrField   = document.getElementById('lrSubtypeField');
   const simpleFld = document.getElementById('simpleFields');
   const bldrEl    = document.getElementById('builderSection');
+  const sumEl     = document.getElementById('builderSummary');
   if (!lrField || !simpleFld || !bldrEl) return;
+
+  // Widen modal for structured workouts
+  document.querySelector('.modal').classList.toggle('wide', isStructured());
 
   if (selType === 'long') {
     lrField.style.display = '';
@@ -1123,13 +1432,21 @@ function renderModalForm() {
 
   if (isStructured()) {
     simpleFld.style.display = 'none';
-    bldrEl.style.display = '';
+    bldrEl.style.display    = '';
     if (!builderData) builderData = defaultBuilderData();
     renderBuilder(bldrEl);
   } else {
     simpleFld.style.display = '';
-    bldrEl.style.display = 'none';
+    bldrEl.style.display    = 'none';
+    if (sumEl) sumEl.style.display = 'none';
     builderData = null;
+  }
+
+  // In template mode: keep effort / notes / completed hidden regardless of type
+  if (templateMode) {
+    document.getElementById('effortField').style.display    = 'none';
+    document.getElementById('notesField').style.display     = 'none';
+    document.getElementById('completedField').style.display = 'none';
   }
 }
 
@@ -1194,6 +1511,7 @@ function renderBuilder(container) {
 
   container.appendChild(wrap);
   updateBuilderTotal();
+  renderLoadTemplateRow();
 }
 
 function makeSegment(key, title, data) {
@@ -1334,65 +1652,74 @@ function makeBlock(block, blockIdx, container) {
 }
 
 function makePiece(piece, pieceIdx, block, container) {
-  const row = document.createElement('div'); row.className = 'piece-row';
+  const card = document.createElement('div');
+  card.className = 'piece-card ' + (piece.effort === 'jog' ? 'jog' : 'hard');
 
-  // ── Distance input (shown when unit = m or mi) ──
+  // ── Row 1: dist / time + unit + effort + remove ──
+  const row1 = document.createElement('div'); row1.className = 'piece-row-1';
+
+  // Distance input (shown when unit = m or mi)
   const dI = document.createElement('input');
   dI.type = 'number'; dI.step = '1'; dI.min = '0';
   dI.className = 'piece-inp piece-dist'; dI.placeholder = '400'; dI.value = piece.dist || '';
   dI.addEventListener('input', () => { piece.dist = dI.value; updateBuilderTotal(); });
 
-  // ── Time input (shown when unit = time) ──
+  // Time input (shown when unit = time)
   const tI = document.createElement('input');
   tI.type = 'text'; tI.className = 'piece-inp piece-time';
   tI.placeholder = '2:00'; tI.value = piece.time || '';
   tI.addEventListener('input', () => { piece.time = tI.value; updateBuilderTotal(); });
 
-  // ── Unit select: m / mi / time ──
+  // Unit select: m / mi / time
   const uS = document.createElement('select'); uS.className = 'piece-sel piece-unit';
   ['m', 'mi', 'time'].forEach(u => {
     const o = document.createElement('option'); o.value = u; o.textContent = u;
     if ((piece.unit || 'm') === u) o.selected = true; uS.appendChild(o);
   });
 
-  // ── Effort select ──
+  // Effort select
   const eS = document.createElement('select'); eS.className = 'piece-sel piece-effort';
   [['hard', 'Hard'], ['jog', 'Jog']].forEach(([v, l]) => {
     const o = document.createElement('option'); o.value = v; o.textContent = l;
     if ((piece.effort || 'hard') === v) o.selected = true; eS.appendChild(o);
   });
-  eS.addEventListener('change', () => { piece.effort = eS.value; updateBuilderTotal(); });
+  eS.addEventListener('change', () => {
+    piece.effort = eS.value;
+    card.className = 'piece-card ' + (eS.value === 'jog' ? 'jog' : 'hard');
+    updateBuilderTotal();
+  });
 
-  // ── Pace input (shown only when unit = time) ──
+  // Remove button (top-right)
+  const rmB = document.createElement('button');
+  rmB.type = 'button'; rmB.className = 'piece-remove'; rmB.textContent = '✕';
+  rmB.addEventListener('click', () => {
+    block.pieces.splice(pieceIdx, 1);
+    if (!block.pieces.length) block.pieces.push(defaultPiece('hard'));
+    renderBuilder(container);
+  });
+
+  row1.appendChild(dI); row1.appendChild(tI); row1.appendChild(uS);
+  row1.appendChild(eS); row1.appendChild(rmB);
+
+  // ── Row 2: pace + rest ──
+  const row2 = document.createElement('div'); row2.className = 'piece-row-2';
+
+  // Pace label + input (always visible; required when unit=time, optional for m/mi)
+  const pLbl = document.createElement('span'); pLbl.className = 'piece-lbl'; pLbl.textContent = 'PACE:';
   const pI = document.createElement('input');
   pI.type = 'text'; pI.className = 'piece-inp piece-pace';
   pI.placeholder = '6:30'; pI.value = piece.pace || '';
   pI.addEventListener('input', () => { piece.pace = pI.value; updateBuilderTotal(); });
 
-  // ── Toggle dist / time / pace visibility based on unit ──
-  const syncUnit = () => {
-    const isTime = uS.value === 'time';
-    dI.style.display = isTime ? 'none' : '';
-    tI.style.display = isTime ? ''     : 'none';
-    pI.style.display = isTime ? ''     : 'none';
-    piece.unit = uS.value;
-    updateBuilderTotal();
-  };
-  uS.addEventListener('change', syncUnit);
-  syncUnit(); // set initial visibility
-
-  // ── Rest: kind + value + unit (for jog) ──
+  // Rest: kind + value + unit (for jog)
   const rSep = document.createElement('span'); rSep.className = 'piece-lbl'; rSep.textContent = 'REST:';
-
   const rK = document.createElement('select'); rK.className = 'piece-sel piece-rkind';
   [['none', 'None'], ['time', 'Time'], ['jog', 'Jog']].forEach(([v, l]) => {
     const o = document.createElement('option'); o.value = v; o.textContent = l;
     if ((piece.restAfter?.kind || 'none') === v) o.selected = true; rK.appendChild(o);
   });
-
   const rV = document.createElement('input');
   rV.type = 'text'; rV.className = 'piece-inp piece-rval'; rV.value = piece.restAfter?.val || '';
-
   const rUS = document.createElement('select'); rUS.className = 'piece-sel piece-runit';
   ['m', 'mi'].forEach(u => {
     const o = document.createElement('option'); o.value = u; o.textContent = u;
@@ -1402,35 +1729,31 @@ function makePiece(piece, pieceIdx, block, container) {
   const syncRest = () => {
     const isNone = rK.value === 'none', isJog = rK.value === 'jog';
     rV.style.display  = isNone ? 'none' : '';
-    rUS.style.display = isJog  ? '' : 'none';
+    rUS.style.display = isJog  ? ''     : 'none';
     rV.placeholder    = rK.value === 'time' ? '2:00' : '200';
   };
   syncRest();
-  rK.addEventListener('change', () => {
-    if (!piece.restAfter) piece.restAfter = {};
-    piece.restAfter.kind = rK.value; syncRest(); updateBuilderTotal();
-  });
-  rV.addEventListener('input', () => {
-    if (!piece.restAfter) piece.restAfter = {};
-    piece.restAfter.val = rV.value; updateBuilderTotal();
-  });
-  rUS.addEventListener('change', () => {
-    if (!piece.restAfter) piece.restAfter = {};
-    piece.restAfter.restUnit = rUS.value; updateBuilderTotal();
-  });
+  rK.addEventListener('change',  () => { if (!piece.restAfter) piece.restAfter = {}; piece.restAfter.kind     = rK.value;  syncRest(); updateBuilderTotal(); });
+  rV.addEventListener('input',   () => { if (!piece.restAfter) piece.restAfter = {}; piece.restAfter.val      = rV.value;  updateBuilderTotal(); });
+  rUS.addEventListener('change', () => { if (!piece.restAfter) piece.restAfter = {}; piece.restAfter.restUnit = rUS.value; updateBuilderTotal(); });
 
-  // ── Remove button ──
-  const rmB = document.createElement('button');
-  rmB.type = 'button'; rmB.className = 'piece-remove'; rmB.textContent = '✕';
-  rmB.addEventListener('click', () => {
-    block.pieces.splice(pieceIdx, 1);
-    if (!block.pieces.length) block.pieces.push(defaultPiece('hard'));
-    renderBuilder(container);
-  });
+  row2.appendChild(pLbl); row2.appendChild(pI);
+  row2.appendChild(rSep); row2.appendChild(rK); row2.appendChild(rV); row2.appendChild(rUS);
 
-  row.appendChild(dI); row.appendChild(tI); row.appendChild(uS); row.appendChild(eS); row.appendChild(pI);
-  row.appendChild(rSep); row.appendChild(rK); row.appendChild(rV); row.appendChild(rUS); row.appendChild(rmB);
-  return row;
+  // ── Toggle dist/time + pace hint based on unit ──
+  const syncUnit = () => {
+    const isTime = uS.value === 'time';
+    dI.style.display   = isTime ? 'none' : '';
+    tI.style.display   = isTime ? ''     : 'none';
+    pLbl.textContent   = isTime ? 'PACE /mi (req):' : 'PACE:';
+    piece.unit = uS.value;
+    updateBuilderTotal();
+  };
+  uS.addEventListener('change', syncUnit);
+  syncUnit();
+
+  card.appendChild(row1); card.appendChild(row2);
+  return card;
 }
 
 function calcBuilderMiles() {
@@ -1471,6 +1794,7 @@ function updateBuilderTotal() {
     <span class="btot-item"><strong>${total.toFixed(2)}</strong> total mi</span>
     <span class="btot-item"><strong>${easy.toFixed(2)}</strong> easy mi</span>
     <span class="btot-item hard"><strong>${hard.toFixed(2)}</strong> hard mi</span>`;
+  updateBuilderSummary();
 }
 
 // ── Calendar ───────────────────────────────────────────────────────────────
@@ -1689,6 +2013,14 @@ function render() { renderCalendar(); renderWeekView(); }
 // ── Modal ──────────────────────────────────────────────────────────────────
 
 function openModal(key, id) {
+  // Ensure we're NOT in template mode
+  templateMode = false; editingTemplateId = null;
+  document.getElementById('templateNameField').style.display = 'none';
+  document.getElementById('effortField').style.display       = '';
+  document.getElementById('notesField').style.display        = '';
+  document.getElementById('completedField').style.display    = '';
+  document.getElementById('saveBtn').textContent             = 'Save Workout';
+
   selDate = key; selId = id;
   const ws = workouts[key] || [], w = id ? ws.find(x => x.id === id) : null;
   document.getElementById('modalTitle').textContent   = w ? 'Edit Workout' : 'Add Workout';
@@ -1708,7 +2040,16 @@ function openModal(key, id) {
   setTimeout(() => { if (!isStructured()) document.getElementById('distInput')?.focus(); }, 60);
 }
 
-function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  templateMode = false; editingTemplateId = null;
+  document.getElementById('templateNameField').style.display = 'none';
+  document.getElementById('effortField').style.display       = '';
+  document.getElementById('notesField').style.display        = '';
+  document.getElementById('completedField').style.display    = '';
+  document.getElementById('saveBtn').textContent             = 'Save Workout';
+  document.querySelector('.modal').classList.remove('wide');
+}
 
 function renderTypePills() {
   const wrap = document.getElementById('typePills'); wrap.innerHTML = '';
@@ -1769,6 +2110,7 @@ document.getElementById('durInput').addEventListener('input',  () => autoCalcSim
 // ── Save workout ───────────────────────────────────────────────────────────
 
 document.getElementById('saveBtn').addEventListener('click', () => {
+  if (templateMode) { saveTemplateFromModal(); return; }
   const notes = document.getElementById('notesInput').value.trim();
   const dur   = document.getElementById('durInput').value.trim();
   let dist, pace, easyMiles, hardMiles, structure;
@@ -1816,6 +2158,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 // ── Delete workout ─────────────────────────────────────────────────────────
 
 document.getElementById('deleteBtn').addEventListener('click', () => {
+  if (templateMode) {
+    if (!editingTemplateId || !confirm('Delete this template?')) return;
+    templates = templates.filter(t => t.id !== editingTemplateId);
+    saveTemplates(); renderTemplatesCard(); closeModal();
+    return;
+  }
   if (!selDate || !selId || !confirm('Delete this workout?')) return;
   workouts[selDate] = (workouts[selDate] || []).filter(x => x.id !== selId);
   if (workouts[selDate].length === 0) delete workouts[selDate];
@@ -1997,6 +2345,20 @@ document.getElementById('athleteSelect').addEventListener('change', async functi
   // Re-render stats if stats tab is active
   if (document.getElementById('appStats').classList.contains('visible')) renderStats();
 });
+
+// ── Template event listeners ───────────────────────────────────────────────
+
+document.getElementById('templateSelect').addEventListener('change', function() {
+  if (!this.value) return;
+  const tpl = templates.find(t => t.id === this.value);
+  if (!tpl?.structure) return;
+  builderData = JSON.parse(JSON.stringify(tpl.structure));
+  const bldrEl = document.getElementById('builderSection');
+  if (bldrEl) renderBuilder(bldrEl);
+  this.value = '';   // reset dropdown after loading
+});
+
+document.getElementById('newTemplateBtn').addEventListener('click', () => openModalForTemplate(null));
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
