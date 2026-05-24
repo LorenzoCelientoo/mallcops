@@ -469,9 +469,9 @@ async function addRunner() {
 
   setSaveStatus('Adding…');
   try {
-    // Create member doc with defaults
+    // Create member doc with defaults (hasAccount: false = new user, will be routed to create-password)
     await db.collection('members').doc(name).set({
-      isCoach: false, athletes: [], showOnPage: true, priority: 50
+      isCoach: false, athletes: [], showOnPage: true, priority: 50, hasAccount: false
     }, { merge: true });
 
     // Update runner list in config
