@@ -1181,9 +1181,9 @@ function openModalForTemplate(templateId) {
   completedOn = false;
   builderData = tpl?.structure ? JSON.parse(JSON.stringify(tpl.structure)) : null;
 
-  document.getElementById('distInput').value         = '';
-  document.getElementById('paceInput').value         = '';
-  document.getElementById('durInput').value          = '';
+  document.getElementById('distInput').value         = tpl?.dist     || '';
+  document.getElementById('paceInput').value         = tpl?.pace     || '';
+  document.getElementById('durInput').value          = tpl?.duration || '';
   document.getElementById('notesInput').value        = '';
   document.getElementById('templateNameInput').value = tpl?.name || '';
 
@@ -1203,15 +1203,25 @@ function openModalForTemplate(templateId) {
 function saveTemplateFromModal() {
   const nameEl = document.getElementById('templateNameInput');
   const name   = nameEl.value.trim();
-  if (!name)        { nameEl.focus(); return; }
-  if (!builderData) { alert('Please select a structured workout type and build the workout first.'); return; }
+  if (!name) { nameEl.focus(); return; }
+
+  const struct = isStructured();
+  // For structured types builderData should be present (it's auto-created when the builder renders)
+  if (struct && !builderData) {
+    alert('Please build the workout structure first.');
+    return;
+  }
 
   const obj = {
     id:        editingTemplateId || genId(),
     name,
     type:      selType,
     subtype:   selType === 'long' ? selSubtype : null,
-    structure: JSON.parse(JSON.stringify(builderData))
+    structure: struct ? JSON.parse(JSON.stringify(builderData)) : null,
+    // Simple-type templates store the form values
+    dist:     !struct ? (document.getElementById('distInput').value  || null) : null,
+    pace:     !struct ? (document.getElementById('paceInput').value  || null) : null,
+    duration: !struct ? (document.getElementById('durInput').value   || null) : null,
   };
 
   if (editingTemplateId) {
@@ -1232,7 +1242,7 @@ function renderLoadTemplateRow() {
   const matching = templates.filter(t => {
     if (t.type !== selType) return false;
     if (selType === 'long' && t.subtype !== selSubtype) return false;
-    return t.structure != null;
+    return true;
   });
   if (!matching.length) { row.style.display = 'none'; return; }
   sel.innerHTML = '<option value="">↓ load a template…</option>';
@@ -1439,9 +1449,8 @@ function renderModalForm() {
     simpleFld.style.display = '';
     bldrEl.style.display    = 'none';
     if (sumEl) sumEl.style.display = 'none';
-    const tplRow = document.getElementById('loadTemplateRow');
-    if (tplRow) tplRow.style.display = 'none';
     builderData = null;
+    renderLoadTemplateRow();  // show/hide dropdown for matching simple templates
   }
 
   // In template mode: keep effort / notes / completed hidden regardless of type
@@ -2353,10 +2362,18 @@ document.getElementById('athleteSelect').addEventListener('change', async functi
 document.getElementById('templateSelect').addEventListener('change', function() {
   if (!this.value) return;
   const tpl = templates.find(t => t.id === this.value);
-  if (!tpl?.structure) return;
-  builderData = JSON.parse(JSON.stringify(tpl.structure));
-  const bldrEl = document.getElementById('builderSection');
-  if (bldrEl) renderBuilder(bldrEl);
+  if (!tpl) return;
+  if (tpl.structure) {
+    // Structured template → load into builder
+    builderData = JSON.parse(JSON.stringify(tpl.structure));
+    const bldrEl = document.getElementById('builderSection');
+    if (bldrEl) renderBuilder(bldrEl);
+  } else {
+    // Simple template → populate the dist / pace / duration fields
+    document.getElementById('distInput').value = tpl.dist     || '';
+    document.getElementById('paceInput').value = tpl.pace     || '';
+    document.getElementById('durInput').value  = tpl.duration || '';
+  }
   this.value = '';   // reset dropdown after loading
 });
 
