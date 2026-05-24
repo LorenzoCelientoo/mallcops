@@ -470,7 +470,12 @@
         await cred.user.updateProfile({ displayName: currentRunner });
         window.location.href = 'members.html';
       } catch(err) {
-        setError('error-create', 'Could not create account. Try again.');
+        const msg = err.code === 'auth/operation-not-allowed'
+          ? 'Email/Password sign-in is not enabled in Firebase Console.'
+          : err.code === 'auth/email-already-in-use'
+          ? 'Account already exists. Try logging in instead.'
+          : 'Could not create account (' + (err.code || err.message) + ')';
+        setError('error-create', msg);
       }
     });
 
