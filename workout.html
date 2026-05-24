@@ -534,41 +534,128 @@
       opacity: 0.25;
     }
 
+    /* ── Stats KPI chips ── */
+    .stats-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px; margin-bottom: 20px;
+    }
+    .stats-kpi {
+      background: var(--tan); border-radius: var(--r);
+      padding: 12px 10px; text-align: center;
+      border: 1px solid rgba(26,34,64,0.1); box-shadow: var(--shadow-sm);
+    }
+    .stats-kpi-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px; letter-spacing: 0.04em; color: var(--dark); line-height: 1;
+    }
+    .stats-kpi-val.kpi-red   { color: var(--red); }
+    .stats-kpi-val.kpi-green { color: #2E7D5B; }
+    .stats-kpi-lbl {
+      font-size: 10px; font-weight: 600;
+      color: rgba(26,34,64,0.45); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-top: 3px;
+    }
+
+    /* ── Intensity split bar ── */
+    .intensity-section { margin-bottom: 22px; }
+    .intensity-label {
+      font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.18em;
+      color: rgba(26,34,64,0.38); margin-bottom: 8px;
+    }
+    .intensity-bar {
+      height: 12px; border-radius: 6px; overflow: hidden;
+      background: rgba(26,34,64,0.08); display: flex;
+    }
+    .intensity-easy { background: #2E7D5B; transition: width 0.4s ease; }
+    .intensity-hard { background: var(--red);  transition: width 0.4s ease; }
+    .intensity-legend {
+      display: flex; justify-content: space-between; margin-top: 6px;
+      font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600;
+    }
+    .il-easy { color: #2E7D5B; }
+    .il-hard { color: var(--red); }
+
     /* ── Breakdown bars ── */
-    .stats-breakdown {
-      display: flex; flex-direction: column; gap: 10px;
+    .stats-breakdown { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+    .breakdown-section-label {
+      font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.18em;
+      color: rgba(26,34,64,0.38); margin-bottom: 10px;
     }
     .breakdown-row {
       display: grid;
-      grid-template-columns: 114px 1fr 46px 68px;
+      grid-template-columns: 114px 1fr 46px auto;
       align-items: center; gap: 10px;
     }
     .breakdown-name {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 12px; letter-spacing: 0.12em;
-      display: flex; align-items: center; gap: 7px;
-      white-space: nowrap;
+      display: flex; align-items: center; gap: 7px; white-space: nowrap;
     }
     .breakdown-track {
       height: 8px; border-radius: 4px;
       background: rgba(26,34,64,0.08); overflow: hidden;
     }
-    .breakdown-fill {
-      height: 100%; border-radius: 4px;
-      transition: width 0.35s ease;
-    }
+    .breakdown-fill { height: 100%; border-radius: 4px; transition: width 0.35s ease; }
     .breakdown-pct {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 0.1em;
-      text-align: right; opacity: 0.75;
+      font-family: 'Bebas Neue', sans-serif; font-size: 13px;
+      letter-spacing: 0.1em; text-align: right; opacity: 0.75;
     }
     .breakdown-mi {
-      font-family: 'Barlow', sans-serif;
-      font-size: 11px; opacity: 0.42; text-align: right;
+      font-family: 'Barlow', sans-serif; font-size: 11px; opacity: 0.55;
+      text-align: right; white-space: nowrap;
     }
+    .breakdown-hard { color: var(--red); font-size: 10px; }
 
+    /* ── Workout log ── */
+    .stats-log-section { border-top: 1px solid var(--border); padding-top: 18px; }
+    .stats-log-label {
+      font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.18em;
+      color: rgba(26,34,64,0.38); margin-bottom: 10px;
+    }
+    .stats-log-list {
+      display: flex; flex-direction: column; gap: 4px;
+      max-height: 340px; overflow-y: auto;
+    }
+    .stats-log-list::-webkit-scrollbar { width: 4px; }
+    .stats-log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .stats-log-item {
+      display: grid;
+      grid-template-columns: 58px 1fr 58px 58px 40px 18px;
+      align-items: center; gap: 8px;
+      padding: 7px 10px; border-radius: var(--r);
+      background: rgba(255,255,255,0.4);
+      border: 1px solid rgba(26,34,64,0.07);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .stats-log-item:hover { background: rgba(255,255,255,0.78); }
+    .sli-date {
+      font-size: 10px; font-weight: 600;
+      color: rgba(26,34,64,0.42); text-transform: uppercase;
+      letter-spacing: 0.04em; line-height: 1.4;
+    }
+    .sli-type {
+      font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 0.08em;
+      display: flex; align-items: center; gap: 6px; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sli-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .sli-dist {
+      font-family: 'Bebas Neue', sans-serif; font-size: 13px;
+      letter-spacing: 0.05em; text-align: right;
+    }
+    .sli-hard { font-size: 10px; color: var(--red); font-weight: 600; text-align: right; }
+    .sli-rpe  { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.08em; text-align: right; }
+    .sli-done    { font-size: 13px; color: #2E7D5B; text-align: right; }
+    .sli-pending { font-size: 10px; color: rgba(26,34,64,0.18); text-align: right; }
+
+    @media (max-width: 600px) {
+      .stats-kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .stats-log-item { grid-template-columns: 50px 1fr 50px 18px; }
+      .sli-hard, .sli-rpe { display: none; }
+    }
     @media (max-width: 500px) {
-      .breakdown-row { grid-template-columns: 88px 1fr 38px 54px; gap: 7px; }
+      .breakdown-row { grid-template-columns: 88px 1fr 38px auto; gap: 7px; }
       .breakdown-name { font-size: 11px; }
     }
 
@@ -901,8 +988,10 @@
       </div>
     </div>
     <div class="stats-week-filter" id="statsWeekFilter"></div>
-    <div class="stats-total" id="statsTotal"></div>
+    <div class="stats-kpi-row"  id="statsKpis"></div>
+    <div id="statsIntensity"></div>
     <div class="stats-breakdown" id="statsBreakdown"></div>
+    <div class="stats-log-section" id="statsLog"></div>
   </div>
 </div>
 
@@ -2215,17 +2304,47 @@ function getWeeksInStatsMonth() {
   return weeks;
 }
 
-// Mileage per type for the selected period
-function getTypeTotals() {
-  const totals = {};
-  TYPES.forEach(t => totals[t.id] = 0);
+// ── Aggregate all stats data for the selected period ──────────────────────
+
+function getStatData() {
+  let totalMi = 0, easyMi = 0, hardMi = 0;
+  let completedCount = 0, totalCount = 0;
+  let effortSum = 0, effortCount = 0;
+  const typeTotals = {};
+  TYPES.forEach(t => typeTotals[t.id] = 0);
+  const workoutList = [];
+
+  const processWorkout = (w, key) => {
+    const dist = parseFloat(w.distance) || 0;
+    totalMi += dist;
+    if (dist > 0 && typeTotals.hasOwnProperty(w.type)) typeTotals[w.type] += dist;
+
+    // Easy / hard miles split
+    if (w.easyMiles != null || w.hardMiles != null) {
+      // Structured workout: use stored values
+      easyMi += parseFloat(w.easyMiles) || 0;
+      hardMi += parseFloat(w.hardMiles) || 0;
+    } else {
+      // Simple workout: classify by type
+      const isHard = w.type === 'tempo' || w.type === 'intervals' || w.type === 'race';
+      if (isHard) hardMi += dist; else easyMi += dist;
+    }
+
+    if (w.type !== 'rest') {
+      totalCount++;
+      if (w.completed) completedCount++;
+    }
+
+    if (w.effort != null) { effortSum += w.effort; effortCount++; }
+    workoutList.push({ ...w, key });
+  };
 
   if (statsWeekSel === 'all') {
     const y = statsMonthDate.getFullYear(), m = statsMonthDate.getMonth();
     Object.entries(workouts).forEach(([key, wList]) => {
       const d = parseKey(key);
       if (d.getFullYear() === y && d.getMonth() === m)
-        wList.forEach(w => { if (w.distance && totals.hasOwnProperty(w.type)) totals[w.type] += parseFloat(w.distance); });
+        wList.forEach(w => processWorkout(w, key));
     });
   } else {
     const mon = getWeeksInStatsMonth()[statsWeekSel];
@@ -2233,18 +2352,20 @@ function getTypeTotals() {
       for (let d = 0; d < 7; d++) {
         const day = new Date(mon); day.setDate(day.getDate() + d);
         const key = dateKey(day.getFullYear(), day.getMonth(), day.getDate());
-        (workouts[key] || []).forEach(w => { if (w.distance && totals.hasOwnProperty(w.type)) totals[w.type] += parseFloat(w.distance); });
+        (workouts[key] || []).forEach(w => processWorkout(w, key));
       }
     }
   }
-  return totals;
+
+  workoutList.sort((a, b) => b.key.localeCompare(a.key));
+  const avgEffort = effortCount > 0 ? effortSum / effortCount : null;
+  return { totalMi, easyMi, hardMi, completedCount, totalCount, avgEffort, typeTotals, workoutList };
 }
 
 function renderWeekFilterBtns() {
   const weeks = getWeeksInStatsMonth();
   const wrap  = document.getElementById('statsWeekFilter');
   wrap.innerHTML = '';
-
   const makeBtn = (label, val) => {
     const b = document.createElement('button');
     b.className = 'wf-btn' + (statsWeekSel === val ? ' active' : '');
@@ -2252,7 +2373,6 @@ function renderWeekFilterBtns() {
     b.addEventListener('click', () => { statsWeekSel = val; renderStats(); });
     wrap.appendChild(b);
   };
-
   makeBtn('MONTH', 'all');
   weeks.forEach((mon, i) => {
     const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
@@ -2262,45 +2382,133 @@ function renderWeekFilterBtns() {
 }
 
 function renderStats() {
-  // Period label
   document.getElementById('statsPeriodLabel').textContent =
     statsMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
-
-  // Week filter buttons (regenerate in case month changed)
   renderWeekFilterBtns();
 
-  const totals = getTypeTotals();
-  const grand  = Object.values(totals).reduce((s, v) => s + v, 0);
-  const bd     = document.getElementById('statsBreakdown');
-  const tot    = document.getElementById('statsTotal');
+  const { totalMi, easyMi, hardMi, completedCount, totalCount, avgEffort, typeTotals, workoutList } = getStatData();
+  const kpisEl   = document.getElementById('statsKpis');
+  const intensEl = document.getElementById('statsIntensity');
+  const bdEl     = document.getElementById('statsBreakdown');
+  const logEl    = document.getElementById('statsLog');
 
-  if (grand === 0) {
-    tot.innerHTML = '';
-    bd.innerHTML  = '<div class="stats-empty">No mileage data for this period</div>';
+  if (totalMi === 0 && totalCount === 0) {
+    kpisEl.innerHTML = intensEl.innerHTML = bdEl.innerHTML = '';
+    bdEl.innerHTML = '<div class="stats-empty">No workouts logged for this period</div>';
+    logEl.innerHTML = '';
     return;
   }
 
-  tot.innerHTML = `<strong>${grand.toFixed(1)}</strong> mi total`;
+  // ── KPI chips ──────────────────────────────────────────────────────────────
+  const completionPct = totalCount > 0 ? Math.round(completedCount / totalCount * 100) : 0;
+  const hasEffort     = avgEffort != null;
+  kpisEl.style.gridTemplateColumns = `repeat(${hasEffort ? 5 : 4}, 1fr)`;
+  kpisEl.innerHTML = `
+    <div class="stats-kpi">
+      <div class="stats-kpi-val">${totalMi.toFixed(1)}</div>
+      <div class="stats-kpi-lbl">Total mi</div>
+    </div>
+    <div class="stats-kpi">
+      <div class="stats-kpi-val kpi-red">${hardMi.toFixed(1)}</div>
+      <div class="stats-kpi-lbl">Hard mi</div>
+    </div>
+    <div class="stats-kpi">
+      <div class="stats-kpi-val kpi-green">${easyMi.toFixed(1)}</div>
+      <div class="stats-kpi-lbl">Easy mi</div>
+    </div>
+    <div class="stats-kpi">
+      <div class="stats-kpi-val">${completedCount}<span style="font-size:15px;opacity:0.38"> /${totalCount}</span></div>
+      <div class="stats-kpi-lbl">Done</div>
+    </div>
+    ${hasEffort ? `<div class="stats-kpi">
+      <div class="stats-kpi-val">${avgEffort.toFixed(1)}</div>
+      <div class="stats-kpi-lbl">Avg RPE</div>
+    </div>` : ''}`;
 
-  bd.innerHTML = '';
-  TYPES.filter(t => totals[t.id] > 0)
-    .sort((a, b) => totals[b.id] - totals[a.id])
-    .forEach(t => {
-      const pct = (totals[t.id] / grand * 100);
-      const row = document.createElement('div');
-      row.className = 'breakdown-row';
-      row.innerHTML = `
-        <div class="breakdown-name">
-          <div class="legend-dot" style="background:${t.color}"></div>
-          ${t.label.toUpperCase()}
+  // ── Intensity split bar ────────────────────────────────────────────────────
+  const splitTotal = easyMi + hardMi;
+  if (splitTotal > 0) {
+    const ePct = (easyMi / splitTotal * 100).toFixed(1);
+    const hPct = (hardMi / splitTotal * 100).toFixed(1);
+    intensEl.innerHTML = `
+      <div class="intensity-section">
+        <div class="intensity-label">Intensity Split</div>
+        <div class="intensity-bar">
+          <div class="intensity-easy" style="width:${ePct}%"></div>
+          <div class="intensity-hard" style="width:${hPct}%"></div>
         </div>
-        <div class="breakdown-track">
-          <div class="breakdown-fill" style="width:${pct.toFixed(1)}%;background:${t.color}"></div>
+        <div class="intensity-legend">
+          <span class="il-easy">Easy ${easyMi.toFixed(1)} mi (${Math.round(parseFloat(ePct))}%)</span>
+          <span class="il-hard">Hard ${hardMi.toFixed(1)} mi (${Math.round(parseFloat(hPct))}%)</span>
         </div>
-        <div class="breakdown-pct">${Math.round(pct)}%</div>
-        <div class="breakdown-mi">${totals[t.id].toFixed(1)} mi</div>`;
-      bd.appendChild(row);
+      </div>`;
+  } else {
+    intensEl.innerHTML = '';
+  }
+
+  // ── Type breakdown ─────────────────────────────────────────────────────────
+  const grand = Object.values(typeTotals).reduce((s, v) => s + v, 0);
+  bdEl.innerHTML = '';
+  if (grand > 0) {
+    const lbl = document.createElement('div'); lbl.className = 'breakdown-section-label'; lbl.textContent = 'By Workout Type';
+    bdEl.appendChild(lbl);
+    TYPES.filter(t => typeTotals[t.id] > 0)
+      .sort((a, b) => typeTotals[b.id] - typeTotals[a.id])
+      .forEach(t => {
+        const pct      = typeTotals[t.id] / grand * 100;
+        const typeHard = workoutList
+          .filter(w => w.type === t.id && (parseFloat(w.hardMiles) || 0) > 0)
+          .reduce((s, w) => s + (parseFloat(w.hardMiles) || 0), 0);
+        const hardTag  = typeHard > 0
+          ? `<span class="breakdown-hard"> · ${typeHard.toFixed(1)} hard</span>` : '';
+        const row = document.createElement('div'); row.className = 'breakdown-row';
+        row.innerHTML = `
+          <div class="breakdown-name"><div class="legend-dot" style="background:${t.color}"></div>${t.label.toUpperCase()}</div>
+          <div class="breakdown-track"><div class="breakdown-fill" style="width:${pct.toFixed(1)}%;background:${t.color}"></div></div>
+          <div class="breakdown-pct">${Math.round(pct)}%</div>
+          <div class="breakdown-mi">${typeTotals[t.id].toFixed(1)} mi${hardTag}</div>`;
+        bdEl.appendChild(row);
+      });
+  }
+
+  // ── Workout log ────────────────────────────────────────────────────────────
+  if (workoutList.length) {
+    logEl.innerHTML = '<div class="stats-log-label">Workout Log</div>';
+    const listEl = document.createElement('div'); listEl.className = 'stats-log-list';
+    workoutList.forEach(w => {
+      const ti    = typeInfo(w.type);
+      const d     = parseKey(w.key);
+      const dow   = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const mday  = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dist  = w.distance ? `${parseFloat(w.distance).toFixed(1)} mi` : '—';
+      const hard  = (parseFloat(w.hardMiles) || 0) > 0 ? `${parseFloat(w.hardMiles).toFixed(1)} hard` : '';
+      const rpe   = w.effort != null ? `RPE ${w.effort}` : '';
+      const rpeColor = !w.effort ? '' : w.effort >= 8 ? 'color:var(--red)' : w.effort >= 5 ? 'color:#C8511A' : 'color:#2E7D5B';
+      const doneEl = w.completed
+        ? '<div class="sli-done">✓</div>'
+        : '<div class="sli-pending">○</div>';
+      const item = document.createElement('div'); item.className = 'stats-log-item';
+      item.innerHTML = `
+        <div class="sli-date"><div>${dow}</div><div>${mday}</div></div>
+        <div class="sli-type"><div class="sli-dot" style="background:${ti.color}"></div>${ti.label}</div>
+        <div class="sli-dist">${dist}</div>
+        <div class="sli-hard">${hard}</div>
+        <div class="sli-rpe" style="${rpeColor}">${rpe}</div>
+        ${doneEl}`;
+      item.addEventListener('click', () => {
+        document.getElementById('tabWorkout').click();
+        // Navigate calendar to that month then open
+        const dd = parseKey(w.key);
+        viewYear = dd.getFullYear(); viewMonth = dd.getMonth();
+        render();
+        setTimeout(() => openModal(w.key, w.id), 80);
+      });
+      listEl.appendChild(item);
     });
+    logEl.appendChild(listEl);
+  } else {
+    logEl.innerHTML = '';
+  }
 }
 
 // ── Stats navigation ────────────────────────────────────────────────────────
