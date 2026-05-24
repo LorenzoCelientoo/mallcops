@@ -349,6 +349,7 @@
         <p class="msg error" id="error-login"></p>
         <button type="submit" class="btn">Enter</button>
         <button type="button" class="back-link" id="back-login">Change ID</button>
+        <button type="button" class="back-link" id="goto-create" style="margin-top:6px;">First time? Create account</button>
       </form>
 
     </div>
@@ -476,17 +477,11 @@
         await auth.signInWithEmailAndPassword(email, pw);
         window.location.href = 'members.html';
       } catch(err) {
-        // user-not-found or invalid-credential = new user, switch to create form
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-          document.getElementById('greeting-create').textContent = currentRunner;
-          document.getElementById('input-create').value = '';
-          document.getElementById('input-confirm').value = '';
-          clearError('error-create');
-          showStep('step-create');
-        } else {
-          setError('error-login', 'Wrong password. Try again.');
-          document.getElementById('input-password').value = '';
-        }
+        // In Firebase v10, auth/invalid-credential covers both wrong-password
+        // and user-not-found — always treat as wrong password here.
+        // New users click the "First time?" link below instead.
+        setError('error-login', 'Wrong password. Try again.');
+        document.getElementById('input-password').value = '';
       }
     });
 
@@ -499,6 +494,14 @@
     document.getElementById('back-login').addEventListener('click', () => {
       showStep('step-id');
       clearError('error-id');
+    });
+
+    document.getElementById('goto-create').addEventListener('click', () => {
+      document.getElementById('greeting-create').textContent = currentRunner;
+      document.getElementById('input-create').value = '';
+      document.getElementById('input-confirm').value = '';
+      clearError('error-create');
+      showStep('step-create');
     });
   </script>
 </body>
