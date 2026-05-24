@@ -425,27 +425,13 @@
       }
 
       currentRunner = validIDs[val];
-      const email = currentRunner.toLowerCase() + '@mallcops.run';
 
-      try {
-        const methods = await auth.fetchSignInMethodsForEmail(email);
-        if (methods.length > 0) {
-          // Returning user
-          document.getElementById('greeting-login').textContent = currentRunner;
-          document.getElementById('input-password').value = '';
-          clearError('error-login');
-          showStep('step-login');
-        } else {
-          // First time
-          document.getElementById('greeting-create').textContent = currentRunner;
-          document.getElementById('input-create').value = '';
-          document.getElementById('input-confirm').value = '';
-          clearError('error-create');
-          showStep('step-create');
-        }
-      } catch(err) {
-        setError('error-id', 'Connection error. Please try again.');
-      }
+      // Always go to login step first; if no account exists the login handler
+      // will auto-switch to the create form
+      document.getElementById('greeting-login').textContent = currentRunner;
+      document.getElementById('input-password').value = '';
+      clearError('error-login');
+      showStep('step-login');
     });
 
     // -- Step 2a: Create password --
@@ -490,8 +476,17 @@
         await auth.signInWithEmailAndPassword(email, pw);
         window.location.href = 'members.html';
       } catch(err) {
-        setError('error-login', 'Wrong password. Try again.');
-        document.getElementById('input-password').value = '';
+        // user-not-found or invalid-credential = new user, switch to create form
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          document.getElementById('greeting-create').textContent = currentRunner;
+          document.getElementById('input-create').value = '';
+          document.getElementById('input-confirm').value = '';
+          clearError('error-create');
+          showStep('step-create');
+        } else {
+          setError('error-login', 'Wrong password. Try again.');
+          document.getElementById('input-password').value = '';
+        }
       }
     });
 
