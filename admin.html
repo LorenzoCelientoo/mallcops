@@ -406,6 +406,9 @@ async function loadAll() {
         showOnPage: doc.data().showOnPage !== false,  // default true
         priority:   doc.data().priority   ?? 50       // default 50
       };
+      // If this runner exists in Firestore but not in RUNNERS list
+      // (e.g. added when config was unwritable), add them now
+      if (!RUNNERS.includes(doc.id)) RUNNERS.push(doc.id);
     });
   } catch(e) {
     console.error('loadAll members error:', e);
