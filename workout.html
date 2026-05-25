@@ -225,11 +225,6 @@
     }
     .day-cell:hover .add-hint { opacity: 1; }
 
-    /* ── MOBILE VIEW TOGGLE ── */
-    .mobile-view-toggle {
-      display: none;   /* desktop: hidden, takes no grid space */
-    }
-
     /* ── WEEK VIEW (mobile) ── */
     .week-view {
       display: none; background: var(--bg);
@@ -386,143 +381,6 @@
       .calendar-card { display: none; }
       .week-view     { display: block; }
 
-      /* Month view mode (toggled by JS adding .mobile-month to #appWorkout) */
-      #appWorkout.mobile-month .calendar-card { display: block; }
-      #appWorkout.mobile-month .week-view     { display: none; }
-
-      /* ── COMPACT MOBILE MONTH GRID ── */
-
-      /* Card wrapper: remove all padding, clip overflow for rounded corners */
-      #appWorkout.mobile-month .calendar-card {
-        padding: 0;
-        overflow: hidden;
-        border-radius: var(--r);
-        border: 1.5px solid var(--border);
-        box-shadow: var(--shadow);
-      }
-
-      /* Dark header matching the week-view style */
-      #appWorkout.mobile-month .cal-header {
-        background: var(--dark);
-        padding: 8px 12px;
-        border-radius: 0;
-      }
-      #appWorkout.mobile-month .month-title {
-        color: var(--bg);
-        font-size: 16px;
-        letter-spacing: 0.14em;
-      }
-      #appWorkout.mobile-month .cal-header .nav-btn {
-        background: rgba(255,255,255,0.12) !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        color: var(--bg) !important;
-        box-shadow: none !important;
-        width: 30px !important; height: 30px !important; font-size: 13px !important;
-      }
-      #appWorkout.mobile-month .cal-header .nav-btn:hover {
-        background: var(--red) !important;
-        border-color: var(--red) !important;
-      }
-      #appWorkout.mobile-month .cal-header .today-btn {
-        font-size: 11px !important; letter-spacing: 0.14em;
-        color: var(--bg) !important; opacity: 0.65;
-        padding: 0 10px !important; width: auto !important;
-      }
-      #appWorkout.mobile-month .cal-header .today-btn:hover { opacity: 1; }
-
-      /* DOW row: very compact */
-      #appWorkout.mobile-month .dow-header {
-        font-size: 9px; letter-spacing: 0.06em;
-        padding: 5px 0 4px;
-        background: rgba(26,34,64,0.04);
-        border-bottom: 1px solid var(--border);
-      }
-
-      /* Grid: gap creates thin lines between cells */
-      #appWorkout.mobile-month .cal-grid {
-        gap: 1px;
-        background: var(--border);
-      }
-
-      /* Compact cells */
-      #appWorkout.mobile-month .day-cell {
-        min-height: 56px;
-        max-height: 56px;
-        padding: 5px 3px 4px;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        overflow: hidden;
-        background: #faf5ec;
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-      }
-      #appWorkout.mobile-month .day-cell:active { background: rgba(26,34,64,0.07); }
-      #appWorkout.mobile-month .day-cell.other-month { background: var(--bg); }
-      #appWorkout.mobile-month .day-cell.today { background: #fdf0ea; border: none !important; }
-
-      /* Day number: centered circle */
-      #appWorkout.mobile-month .day-num {
-        width: 26px; height: 26px;
-        font-size: 12px; font-weight: 600;
-        margin: 0 auto 4px;
-        color: var(--dark);
-      }
-      #appWorkout.mobile-month .today .day-num {
-        background: var(--red); color: var(--bg);
-      }
-
-      /* Workout dots instead of full chips */
-      #appWorkout.mobile-month .chips-wrap {
-        flex-direction: row !important;
-        flex-wrap: nowrap;
-        gap: 2px;
-        justify-content: center;
-        overflow: hidden;
-        max-height: 10px;
-      }
-      #appWorkout.mobile-month .workout-chip {
-        width: 7px !important; height: 7px !important;
-        border-radius: 50% !important;
-        padding: 0 !important;
-        box-shadow: none !important;
-        min-width: 7px !important;
-        flex-shrink: 0;
-        overflow: hidden;
-        transform: none !important;
-      }
-      #appWorkout.mobile-month .workout-chip:hover { transform: none !important; filter: none; }
-      #appWorkout.mobile-month .chip-type,
-      #appWorkout.mobile-month .chip-dist,
-      #appWorkout.mobile-month .chip-duration { display: none !important; }
-
-      /* Hide add-workout hint text */
-      #appWorkout.mobile-month .add-hint { display: none !important; }
-
-      /* Toggle bar */
-      .mobile-view-toggle {
-        display: flex;
-        background: var(--dark);
-        border-radius: var(--r);
-        padding: 3px; gap: 3px;
-        box-shadow: var(--shadow);
-      }
-      .mvt-btn {
-        flex: 1;
-        font-family: 'Bebas Neue', sans-serif;
-        font-size: 13px; letter-spacing: 0.18em;
-        padding: 8px 0;
-        background: none; border: none;
-        border-radius: calc(var(--r) - 1px);
-        color: rgba(255,255,255,0.45);
-        cursor: pointer;
-        transition: background 0.18s, color 0.18s;
-      }
-      .mvt-btn.active {
-        background: var(--red);
-        color: white;
-      }
-      .mvt-btn:not(.active):hover { color: rgba(255,255,255,0.75); }
 
       .sidebar { display: flex; flex-direction: column; gap: 12px; }
       .card { padding: 14px; }
@@ -1066,11 +924,7 @@
 
 <div class="app" id="appWorkout">
 
-  <!-- Month / Week toggle (mobile only) -->
-  <div class="mobile-view-toggle" id="mobileViewToggle">
-    <button class="mvt-btn active" id="mvtWeekBtn"  onclick="setMobileView('week')">WEEK</button>
-    <button class="mvt-btn"        id="mvtMonthBtn" onclick="setMobileView('month')">MONTH</button>
-  </div>
+
 
   <!-- Month Calendar (desktop/tablet) -->
   <div class="calendar-card">
@@ -2409,20 +2263,7 @@ function renderWeekView() {
 
 function render() { renderCalendar(); renderWeekView(); }
 
-// ── Mobile view toggle (week ↔ month) ─────────────────────────────────────
 
-let mobileCalView = localStorage.getItem('mallcops_calView') || 'week';
-
-function setMobileView(view) {
-  mobileCalView = view;
-  localStorage.setItem('mallcops_calView', view);
-  const app = document.getElementById('appWorkout');
-  app.classList.toggle('mobile-month', view === 'month');
-  document.getElementById('mvtWeekBtn').classList.toggle('active',  view === 'week');
-  document.getElementById('mvtMonthBtn').classList.toggle('active', view === 'month');
-  // Render the newly visible view
-  if (view === 'month') renderCalendar(); else renderWeekView();
-}
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 
@@ -2933,7 +2774,7 @@ auth.onAuthStateChanged(function(authUser) {
   viewMonth = _n.getMonth();
   viewWeekStart = getMonday(_n);
 
-  load().then(() => { render(); setMobileView(mobileCalView); });
+  load().then(() => { render(); });
   loadPublicTemplates();
 });
 </script>
