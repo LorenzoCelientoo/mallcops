@@ -1695,8 +1695,11 @@ auth.onAuthStateChanged(function(authUser) {
 
 function exportPDF() {
   buildPrintView();
-  window.print();
-  setTimeout(() => { const pv = document.getElementById('printView'); if (pv) pv.remove(); }, 1500);
+  // Small delay lets the DOM render before print dialog fires (required on iOS Safari)
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { const pv = document.getElementById('printView'); if (pv) pv.remove(); }, 2000);
+  }, 300);
 }
 
 // ── Format builderData structure into lines (mirrors updateBuilderSummary) ──

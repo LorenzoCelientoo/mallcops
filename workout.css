@@ -231,6 +231,8 @@
     .wk-nav-btn:hover { background: var(--red) !important; border-color: var(--red) !important; }
     .week-today-btn { font-family: 'Bebas Neue', sans-serif; font-size: 11px !important; letter-spacing: 0.14em; color: var(--bg); opacity: 0.65; background: none !important; border: 1px solid rgba(255,255,255,0.2) !important; width: auto !important; padding: 0 10px !important; box-shadow: none !important; }
     .week-today-btn:hover { opacity: 1; background: var(--red) !important; border-color: var(--red) !important; }
+    .wk-pdf-btn { font-family: 'Bebas Neue', sans-serif; font-size: 11px !important; letter-spacing: 0.12em; color: var(--bg); background: rgba(200,57,43,0.55) !important; border: 1px solid rgba(200,57,43,0.7) !important; width: auto !important; padding: 0 9px !important; box-shadow: none !important; display: flex; align-items: center; gap: 4px; }
+    .wk-pdf-btn:hover { background: var(--red) !important; border-color: var(--red) !important; }
 
     .week-day-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 64px; cursor: pointer; transition: background 0.15s; }
     .week-day-row:last-child { border-bottom: none; }
