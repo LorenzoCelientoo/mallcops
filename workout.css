@@ -902,11 +902,10 @@
   body > *:not(#printView) { display: none !important; }
   #printView { display: block !important; }
   #pdf-overlay { display: none !important; }
-  @page          { margin: 10mm 12mm; }
-  @page month    { size: A4 landscape; margin: 10mm 12mm; }
-  @page week     { size: A4 portrait;  margin: 10mm 12mm; }
-  .pv-month-page { page: month; page-break-after: always; }
-  .pv-week-page  { page: week;  page-break-after: always; }
+  /* Single landscape rule — Safari doesn't support named @page, this keeps iOS + Chrome identical */
+  @page { size: A4 landscape; margin: 10mm 12mm; }
+  .pv-month-page { page-break-after: always; }
+  .pv-week-page  { page-break-after: always; }
   .pv-week-page:last-child { page-break-after: avoid; }
   .pv-week-row   { page-break-inside: avoid; }
 }
@@ -1019,8 +1018,8 @@
 /* Data rows */
 .pv-week-row td {
   border: 1px solid #ddd; vertical-align: top;
-  padding: 9px 9px; font-size: 11px; color: #1a2240;
-  height: 112px; background: white;
+  padding: 8px 9px; font-size: 11px; color: #1a2240;
+  height: 92px; background: white;
 }
 .pv-week-row.pv-alt td { background: white; }
 .pv-week-row.pv-off td { opacity: 0.3; background: white; }
