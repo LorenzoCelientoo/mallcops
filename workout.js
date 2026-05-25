@@ -1695,11 +1695,35 @@ auth.onAuthStateChanged(function(authUser) {
 
 function exportPDF() {
   buildPrintView();
-  // Small delay lets the DOM render before print dialog fires (required on iOS Safari)
-  setTimeout(() => {
+  const pv = document.getElementById('printView');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  if (isIOS) {
+    // iOS doesn't support window.print() as save-to-PDF.
+    // Open the print view in a new tab — user taps Share → Print → Save to Files.
+    const newWin = window.open('', '_blank');
+    if (newWin) {
+      const base = window.location.href.replace(/[^\/]*$/, '');
+      newWin.document.write('<!DOCTYPE html><html><head>'
+        + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<title>Training Plan – Mall Cops</title>'
+        + '<base href="' + base + '">'
+        + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">'
+        + '<link rel="stylesheet" href="workout.css">'
+        + '<style>html,body{margin:0;padding:0;background:white}#printView{display:block!important}'
+        + '#ios-tip{position:fixed;bottom:0;left:0;right:0;background:#1a2240;color:white;padding:13px 16px;text-align:center;font-size:13px;font-family:system-ui,sans-serif;z-index:9999}'
+        + '</style></head><body>'
+        + '<div id="printView">' + pv.innerHTML + '</div>'
+        + '<div id="ios-tip">Tap &nbsp;<strong>↗ Share</strong>&nbsp; → &nbsp;<strong>Print</strong>&nbsp; → pinch-zoom preview → &nbsp;<strong>Share → Save to Files</strong></div>'
+        + '</body></html>');
+      newWin.document.close();
+    }
+    pv.remove();
+  } else {
+    // Desktop / Android: standard print dialog
     window.print();
-    setTimeout(() => { const pv = document.getElementById('printView'); if (pv) pv.remove(); }, 2000);
-  }, 300);
+    setTimeout(() => { if (pv) pv.remove(); }, 2000);
+  }
 }
 
 // ── Format builderData structure into lines (mirrors updateBuilderSummary) ──
