@@ -1699,28 +1699,43 @@ function exportPDF() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   if (isIOS) {
-    // iOS doesn't support window.print() as save-to-PDF.
-    // Open the print view in a new tab — user taps Share → Print → Save to Files.
-    const newWin = window.open('', '_blank');
-    if (newWin) {
-      const base = window.location.href.replace(/[^\/]*$/, '');
-      newWin.document.write('<!DOCTYPE html><html><head>'
-        + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-        + '<title>Training Plan – Mall Cops</title>'
-        + '<base href="' + base + '">'
-        + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">'
-        + '<link rel="stylesheet" href="workout.css">'
-        + '<style>html,body{margin:0;padding:0;background:white}#printView{display:block!important}'
-        + '#ios-tip{position:fixed;bottom:0;left:0;right:0;background:#1a2240;color:white;padding:13px 16px;text-align:center;font-size:13px;font-family:system-ui,sans-serif;z-index:9999}'
-        + '</style></head><body>'
-        + '<div id="printView">' + pv.innerHTML + '</div>'
-        + '<div id="ios-tip">Tap &nbsp;<strong>↗ Share</strong>&nbsp; → &nbsp;<strong>Print</strong>&nbsp; → pinch-zoom preview → &nbsp;<strong>Share → Save to Files</strong></div>'
-        + '</body></html>');
-      newWin.document.close();
-    }
-    pv.remove();
+    // iOS blocks window.open() and requires window.print() from a direct user tap.
+    // Show a full-screen overlay; the SAVE button gives a fresh gesture to call print().
+    // @media print still hides everything except #printView (which stays in the DOM behind the overlay).
+    const overlay = document.createElement('div');
+    overlay.id = 'pdf-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:white;display:flex;flex-direction:column;';
+
+    overlay.innerHTML =
+      '<div style="background:#1a2240;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">'
+      + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.15em;color:rgba(255,255,255,0.45);flex:1">TRAINING PLAN</span>'
+      + '<button id="pvPrintBtn" style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.1em;background:#C8392B;color:white;border:none;padding:9px 18px;border-radius:3px;cursor:pointer">⬇ SAVE AS PDF</button>'
+      + '<button id="pvCloseBtn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:9px 13px;border-radius:3px;font-size:14px;cursor:pointer;margin-left:6px">✕</button>'
+      + '</div>'
+      + '<div style="background:rgba(200,57,43,0.07);border-bottom:1px solid rgba(200,57,43,0.18);padding:8px 14px;font-family:system-ui,sans-serif;font-size:12px;color:#C8392B;text-align:center;flex-shrink:0">'
+      + 'Tap <strong>SAVE AS PDF</strong> → Print → then Share → Save to Files'
+      + '</div>'
+      + '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px">'
+      + pv.innerHTML
+      + '</div>';
+
+    document.body.appendChild(overlay);
+
+    document.getElementById('pvPrintBtn').addEventListener('click', function() {
+      window.print();
+    });
+    document.getElementById('pvCloseBtn').addEventListener('click', function() {
+      overlay.remove();
+      if (pv) pv.remove();
+    });
+    window.addEventListener('afterprint', function h() {
+      overlay.remove();
+      if (pv) pv.remove();
+      window.removeEventListener('afterprint', h);
+    });
+
   } else {
-    // Desktop / Android: standard print dialog
+    // Desktop / Android Chrome: standard print-to-PDF dialog
     window.print();
     setTimeout(() => { if (pv) pv.remove(); }, 2000);
   }
