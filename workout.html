@@ -225,6 +225,11 @@
     }
     .day-cell:hover .add-hint { opacity: 1; }
 
+    /* ── MOBILE VIEW TOGGLE ── */
+    .mobile-view-toggle {
+      display: none;   /* desktop: hidden, takes no grid space */
+    }
+
     /* ── WEEK VIEW (mobile) ── */
     .week-view {
       display: none; background: var(--bg);
@@ -377,9 +382,38 @@
 
       .app { padding: 10px 10px 90px; gap: 12px; }
 
-      /* Switch to week view */
+      /* Default: week view */
       .calendar-card { display: none; }
       .week-view     { display: block; }
+
+      /* Month view mode (toggled by JS adding .mobile-month to #appWorkout) */
+      #appWorkout.mobile-month .calendar-card { display: block; }
+      #appWorkout.mobile-month .week-view     { display: none; }
+
+      /* Toggle bar */
+      .mobile-view-toggle {
+        display: flex;
+        background: var(--dark);
+        border-radius: var(--r);
+        padding: 3px; gap: 3px;
+        box-shadow: var(--shadow);
+      }
+      .mvt-btn {
+        flex: 1;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 13px; letter-spacing: 0.18em;
+        padding: 8px 0;
+        background: none; border: none;
+        border-radius: calc(var(--r) - 1px);
+        color: rgba(255,255,255,0.45);
+        cursor: pointer;
+        transition: background 0.18s, color 0.18s;
+      }
+      .mvt-btn.active {
+        background: var(--red);
+        color: white;
+      }
+      .mvt-btn:not(.active):hover { color: rgba(255,255,255,0.75); }
 
       .sidebar { display: flex; flex-direction: column; gap: 12px; }
       .card { padding: 14px; }
@@ -922,6 +956,12 @@
 </div>
 
 <div class="app" id="appWorkout">
+
+  <!-- Month / Week toggle (mobile only) -->
+  <div class="mobile-view-toggle" id="mobileViewToggle">
+    <button class="mvt-btn active" id="mvtWeekBtn"  onclick="setMobileView('week')">WEEK</button>
+    <button class="mvt-btn"        id="mvtMonthBtn" onclick="setMobileView('month')">MONTH</button>
+  </div>
 
   <!-- Month Calendar (desktop/tablet) -->
   <div class="calendar-card">
@@ -2260,6 +2300,21 @@ function renderWeekView() {
 
 function render() { renderCalendar(); renderWeekView(); }
 
+// ── Mobile view toggle (week ↔ month) ─────────────────────────────────────
+
+let mobileCalView = localStorage.getItem('mallcops_calView') || 'week';
+
+function setMobileView(view) {
+  mobileCalView = view;
+  localStorage.setItem('mallcops_calView', view);
+  const app = document.getElementById('appWorkout');
+  app.classList.toggle('mobile-month', view === 'month');
+  document.getElementById('mvtWeekBtn').classList.toggle('active',  view === 'week');
+  document.getElementById('mvtMonthBtn').classList.toggle('active', view === 'month');
+  // Render the newly visible view
+  if (view === 'month') renderCalendar(); else renderWeekView();
+}
+
 // ── Modal ──────────────────────────────────────────────────────────────────
 
 function openModal(key, id) {
@@ -2769,7 +2824,7 @@ auth.onAuthStateChanged(function(authUser) {
   viewMonth = _n.getMonth();
   viewWeekStart = getMonday(_n);
 
-  load().then(() => render());
+  load().then(() => { render(); setMobileView(mobileCalView); });
   loadPublicTemplates();
 });
 </script>
