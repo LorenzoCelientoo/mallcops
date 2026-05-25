@@ -10,13 +10,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     :root {
-      --bg:     #f0e8d5;
-      --dark:   #1a2240;
-      --red:    #c8341a;
-      --green:  #2E7D5B;
-      --tan:    #d4c4a0;
-      --border: rgba(26,34,64,0.15);
-      --shadow: 3px 4px 0 rgba(26,34,64,0.16);
+      --bg:        #f0e8d5;
+      --dark:      #1a2240;
+      --red:       #c8341a;
+      --green:     #2E7D5B;
+      --tan:       #d4c4a0;
+      --border:    rgba(26,34,64,0.15);
+      --shadow-sm: 2px 3px 0 rgba(26,34,64,0.12);
+      --shadow:    3px 4px 0 rgba(26,34,64,0.16);
+      --shadow-lg: 4px 6px 0 rgba(26,34,64,0.22);
       --r: 4px;
     }
 
@@ -74,8 +76,8 @@
       display: flex; align-items: baseline; gap: 6px; line-height: 1;
       flex: 1; justify-content: center;
     }
-    .logo-icon    { font-size: 18px; }
-    .logo-accent  { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.12em; color: var(--red); }
+    .logo-icon   { font-size: 18px; }
+    .logo-accent { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.12em; color: var(--red); }
     #saveStatus {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 11px; letter-spacing: 0.16em;
@@ -89,7 +91,6 @@
       margin: 0 auto;
       padding: 28px 24px 60px;
     }
-
     .page-title {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 28px; letter-spacing: 0.18em;
@@ -114,116 +115,181 @@
       font-size: 13px; letter-spacing: 0.16em;
       opacity: 0.5; margin-bottom: 10px;
     }
-    .add-runner-row {
-      display: flex; gap: 10px; align-items: center;
-    }
+    .add-runner-row { display: flex; gap: 10px; align-items: center; }
     .add-runner-input {
       flex: 1;
-      font-family: 'Barlow', sans-serif;
-      font-size: 14px;
+      font-family: 'Barlow', sans-serif; font-size: 14px;
       padding: 8px 12px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--r);
-      background: rgba(255,255,255,0.7);
-      color: var(--dark);
-      outline: none;
-      transition: border-color 0.2s;
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      background: rgba(255,255,255,0.7); color: var(--dark);
+      outline: none; transition: border-color 0.2s;
     }
     .add-runner-input:focus { border-color: var(--dark); }
     .add-runner-btn {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 0.16em;
+      font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 0.16em;
       padding: 8px 18px;
       background: var(--dark); color: var(--bg);
       border: none; border-radius: var(--r);
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
+      cursor: pointer; transition: background 0.2s; white-space: nowrap;
     }
     .add-runner-btn:hover { background: var(--red); }
-    .add-runner-hint {
-      font-size: 11px; opacity: 0.4; margin-top: 7px;
-      letter-spacing: 0.06em;
-    }
+    .add-runner-hint { font-size: 11px; opacity: 0.4; margin-top: 7px; letter-spacing: 0.06em; }
 
-    /* ── RUNNER CARDS ── */
-    .runner-card {
+    /* ── RUNNER LIST ROWS ── */
+    .runner-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 18px;
       background: rgba(255,255,255,0.55);
       border: 1.5px solid var(--border);
       border-radius: var(--r);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .runner-row:hover {
+      border-color: rgba(26,34,64,0.4);
+      background: rgba(255,255,255,0.82);
       box-shadow: var(--shadow);
-      margin-bottom: 14px;
-      overflow: hidden;
-      transition: border-color 0.2s;
     }
-    .runner-card.is-coach { border-color: var(--red); }
-
-    .runner-head {
-      display: flex; align-items: center; gap: 10px;
-      padding: 14px 18px; flex-wrap: wrap;
-    }
-
-    .runner-name {
+    .row-name {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 20px; letter-spacing: 0.14em;
-      flex: 1; min-width: 80px;
+      flex: 1;
+    }
+    .row-tags { display: flex; gap: 5px; align-items: center; }
+    .row-tag {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 10px; letter-spacing: 0.14em;
+      padding: 2px 7px; border-radius: 2px;
+    }
+    .row-tag.coach  { background: var(--tan); color: var(--dark); }
+    .row-tag.hidden { background: rgba(200,52,26,0.1); color: var(--red); border: 1px solid rgba(200,52,26,0.2); }
+    .row-prio {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px; letter-spacing: 0.1em;
+      opacity: 0.28; width: 28px; text-align: right; flex-shrink: 0;
+    }
+    .row-arrow { font-size: 22px; opacity: 0.22; flex-shrink: 0; }
+
+    .loading-msg {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px; letter-spacing: 0.2em;
+      opacity: 0.35; text-align: center; padding: 4rem 0;
     }
 
-    .coach-badge {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 11px; letter-spacing: 0.18em;
-      padding: 2px 7px; border-radius: 2px;
-      background: var(--tan); color: var(--dark);
-      opacity: 0; transition: opacity 0.2s;
-      pointer-events: none; white-space: nowrap;
+    /* ── OVERLAY + MODAL ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(26,34,64,0.62);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.22s;
     }
-    .runner-card.is-coach .coach-badge { opacity: 1; }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--bg);
+      border-radius: var(--r);
+      padding: 28px;
+      width: 520px; max-width: 95vw;
+      max-height: 90vh; overflow-y: auto;
+      transform: translateY(16px);
+      transition: transform 0.22s;
+      box-shadow: var(--shadow-lg);
+      border: 1.5px solid var(--border);
+      position: relative; z-index: 1001;
+    }
+    .overlay.open .modal { transform: translateY(0); }
+
+    .modal-head {
+      display: flex; align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 22px; padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+    .modal-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px; letter-spacing: 0.14em;
+      color: var(--dark); line-height: 1;
+    }
+    .modal-sub {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      opacity: 0.38; margin-top: 5px;
+    }
+    .close-btn {
+      background: var(--tan); border: 1px solid var(--border);
+      width: 32px; height: 32px; border-radius: 3px; cursor: pointer;
+      font-size: 15px; color: rgba(26,34,64,0.5);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+    .close-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+
+    /* Modal sections */
+    .modal-section {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .section-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px; letter-spacing: 0.22em;
+      opacity: 0.38; margin-bottom: 12px;
+    }
+
+    /* Fields */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label {
+      display: block;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px; letter-spacing: 0.2em;
+      opacity: 0.42; margin-bottom: 7px;
+    }
+    .form-input {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid var(--border); border-radius: var(--r);
+      font-size: 13px; font-family: 'Barlow', sans-serif;
+      color: var(--dark); background: rgba(255,255,255,0.5);
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--dark); }
 
     /* Toggle switch */
     .toggle-wrap {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 10px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 11px; letter-spacing: 0.16em;
-      color: var(--dark); opacity: 0.45;
+      font-size: 12px; letter-spacing: 0.16em;
+      color: var(--dark); opacity: 0.4;
       cursor: pointer; user-select: none;
-      flex-shrink: 0;
+      padding: 9px 0;
     }
-    .toggle-wrap.active         { opacity: 1; color: var(--red); }
-    .toggle-wrap.page-toggle.active { color: var(--green); }
-
+    .toggle-wrap.active                    { opacity: 1; color: var(--red); }
+    .toggle-wrap.page-toggle.active        { color: var(--green); }
     .toggle-track {
-      width: 34px; height: 18px;
-      background: var(--border);
-      border-radius: 9px;
-      position: relative;
-      transition: background 0.22s;
-      flex-shrink: 0;
+      width: 36px; height: 20px;
+      background: var(--border); border-radius: 10px;
+      position: relative; transition: background 0.22s; flex-shrink: 0;
     }
     .toggle-wrap.active .toggle-track              { background: var(--red); }
     .toggle-wrap.page-toggle.active .toggle-track  { background: var(--green); }
-
     .toggle-knob {
-      position: absolute; top: 2px; left: 2px;
+      position: absolute; top: 3px; left: 3px;
       width: 14px; height: 14px;
       background: white; border-radius: 50%;
       transition: transform 0.22s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
     .toggle-wrap.active .toggle-knob { transform: translateX(16px); }
+    .toggle-divider { height: 1px; background: var(--border); margin: 2px 0; }
 
-    /* Athletes section */
-    .athletes-section {
-      display: none;
-      padding: 0 18px 16px;
-      border-top: 1px solid var(--border);
-    }
-    .runner-card.is-coach .athletes-section { display: block; }
-    .athletes-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 0.16em;
-      color: var(--dark); opacity: 0.5;
-      margin-bottom: 10px; margin-top: 12px;
-    }
+    /* Athlete chips */
     .athlete-checks { display: flex; flex-wrap: wrap; gap: 8px; }
     .athlete-chip {
       display: flex; align-items: center; gap: 5px;
@@ -238,124 +304,48 @@
     .athlete-chip.selected { background: var(--dark); color: var(--bg); border-color: var(--dark); }
     .athlete-chip input[type="checkbox"] { display: none; }
 
-    /* ── Icon buttons (edit / delete) ── */
-    .icon-btn {
-      background: none; border: none; cursor: pointer;
-      font-size: 18px; padding: 5px 7px; border-radius: 3px;
-      opacity: 0.4; transition: opacity 0.15s, background 0.15s;
-      flex-shrink: 0; line-height: 1;
-    }
-    .icon-btn:hover { opacity: 1; }
-    .icon-btn.delete-btn:hover { background: rgba(200,52,26,0.12); }
-    .icon-btn.confirm-btn { opacity: 1; color: var(--green); font-size: 20px; }
-    .icon-btn.cancel-btn  { opacity: 0.5; font-size: 20px; }
-    .icon-btn.cancel-btn:hover { opacity: 1; }
-
-    /* ── Priority input ── */
-    .priority-wrap {
-      display: flex; align-items: center; gap: 5px;
-      flex-shrink: 0;
-    }
-    .priority-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 11px; letter-spacing: 0.14em;
-      opacity: 0.4;
-    }
-    .priority-input {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 15px; letter-spacing: 0.1em;
-      width: 48px; text-align: center;
-      padding: 3px 5px; border-radius: 3px;
-      border: 1.5px solid var(--border);
-      background: rgba(255,255,255,0.6);
-      color: var(--dark); outline: none;
-      transition: border-color 0.2s;
-    }
-    .priority-input:focus { border-color: var(--dark); }
-
-    /* Inline name edit */
-    .name-input {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px; letter-spacing: 0.14em;
-      background: rgba(255,255,255,0.8);
-      border: 1.5px solid var(--dark);
-      border-radius: 3px; color: var(--dark);
-      padding: 1px 8px; outline: none;
-      width: 140px; flex-shrink: 1;
-    }
-
-    /* Loading state */
-    .loading-msg {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 0.2em;
-      opacity: 0.35; text-align: center;
-      padding: 4rem 0;
-    }
-
-    /* ── PBs section ── */
-    .pbs-section {
-      padding: 0 18px 16px;
-      border-top: 1px solid var(--border);
-    }
-    .pbs-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 0.16em;
-      color: var(--dark); opacity: 0.5;
-      margin-bottom: 10px; margin-top: 12px;
-    }
-    .pb-list {
-      display: flex; flex-wrap: wrap; gap: 6px;
-      margin-bottom: 8px; min-height: 14px;
-    }
+    /* PBs */
+    .pb-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 10px; }
     .pb-item {
       display: flex; align-items: center; gap: 6px;
-      font-family: 'Barlow', sans-serif;
-      font-size: 13px;
-      padding: 4px 8px 4px 12px;
-      border-radius: 3px;
+      font-family: 'Barlow', sans-serif; font-size: 13px;
+      padding: 4px 8px 4px 12px; border-radius: 3px;
       border: 1.5px solid var(--border);
-      background: rgba(255,255,255,0.6);
-      color: var(--dark);
+      background: rgba(255,255,255,0.6); color: var(--dark);
     }
     .pb-del {
       background: none; border: none; cursor: pointer;
       font-size: 16px; line-height: 1;
-      color: var(--red); opacity: 0.45;
-      padding: 0 1px;
+      color: var(--red); opacity: 0.45; padding: 0 1px;
       transition: opacity 0.15s;
     }
     .pb-del:hover { opacity: 1; }
-    .pb-none {
-      font-size: 12px; opacity: 0.35;
-      font-style: italic;
-      align-self: center;
-    }
-    .pb-add-row {
-      display: flex; gap: 7px; align-items: center;
-    }
-    .pb-add-input {
-      font-family: 'Barlow', sans-serif;
-      font-size: 13px;
-      padding: 5px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--r);
-      background: rgba(255,255,255,0.7);
-      color: var(--dark); outline: none;
-      flex: 1; min-width: 0;
-      transition: border-color 0.2s;
-    }
-    .pb-add-input:focus { border-color: var(--dark); }
-    .pb-add-btn {
+    .pb-none { font-size: 12px; opacity: 0.35; font-style: italic; }
+
+    /* Add row (used for PBs and Rename) */
+    .add-row { display: flex; gap: 8px; align-items: center; }
+    .add-row .form-input { flex: 1; min-width: 0; width: auto; }
+    .add-btn {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 12px; letter-spacing: 0.14em;
-      padding: 5px 14px;
+      padding: 9px 16px;
       background: var(--dark); color: var(--bg);
       border: none; border-radius: var(--r);
-      cursor: pointer; white-space: nowrap;
-      flex-shrink: 0;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
       transition: background 0.2s;
     }
-    .pb-add-btn:hover { background: var(--green); }
+    .add-btn:hover         { background: var(--green); }
+    .add-btn.rename-btn:hover { background: var(--dark); filter: brightness(1.25); }
+
+    /* Delete */
+    .btn-delete {
+      font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.16em;
+      padding: 10px 18px; width: 100%;
+      background: rgba(200,52,26,0.08); color: var(--red);
+      border: 1.5px solid rgba(200,52,26,0.22); border-radius: var(--r);
+      cursor: pointer; transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-delete:hover { background: rgba(200,52,26,0.18); border-color: var(--red); }
 
     @media (max-width: 600px) {
       body { padding-top: 54px; }
@@ -364,7 +354,25 @@
       .back-link { font-size: 11px; padding: 4px 8px; }
       .logo-accent { font-size: 18px; }
       .admin-wrap { padding: 16px 12px 60px; }
-      .runner-head { gap: 8px; }
+
+      /* Bottom sheet on mobile */
+      .overlay { align-items: flex-end; }
+      .modal {
+        width: 100%; max-width: 100%; max-height: 92vh;
+        border-radius: 14px 14px 0 0;
+        padding: 0 16px 32px;
+        transform: translateY(100%);
+        border-left: none; border-right: none; border-bottom: none;
+      }
+      .modal::before {
+        content: '';
+        display: block; width: 36px; height: 4px;
+        background: var(--border); border-radius: 2px;
+        margin: 14px auto 18px;
+      }
+      .overlay.open .modal { transform: translateY(0); }
+      .modal-head { margin-bottom: 14px; padding-bottom: 12px; }
+      .modal-title { font-size: 26px; }
     }
   </style>
 </head>
@@ -397,7 +405,7 @@
 
 <div class="admin-wrap">
   <div class="page-title">Manage Runners</div>
-  <div class="page-sub">Add runners &mdash; toggle coach status &mdash; control front page visibility</div>
+  <div class="page-sub">Tap a runner to edit their profile</div>
 
   <!-- Add Runner -->
   <div class="add-runner-card">
@@ -412,180 +420,148 @@
   <div id="runnerList"><div class="loading-msg">Loading&hellip;</div></div>
 </div>
 
+<!-- Runner detail overlay -->
+<div class="overlay" id="runnerOverlay" onclick="overlayClick(event)">
+  <div class="modal" id="runnerModal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-sub"   id="modalSub"></div>
+      </div>
+      <button class="close-btn" onclick="closeRunnerModal()">&#10005;</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 <script>
-// ── Seed list (used if Firestore config doesn't exist yet) ──────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
 const SEED_RUNNERS = ['Christian','Clayton','Eric','Ignacio','Karl','Kyle','Lorenzo','Mark','Mike','Stan','Stu','Tom','Will','Luca'];
 
-let RUNNERS    = [];   // loaded from config/runners
-let memberData = {};   // { [name]: { isCoach, athletes, showOnPage } }
-let pbData     = {};   // { [name]: string[] }
+let RUNNERS      = [];
+let memberData   = {};
+let pbData       = {};
+let activeRunner = null;   // name currently open in modal
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function setSaveStatus(msg) {
   const el = document.getElementById('saveStatus');
   if (el) el.textContent = msg;
 }
 
-// ID preview as user types
 document.getElementById('newRunnerInput').addEventListener('input', function() {
-  const val = this.value.trim();
-  const preview = document.getElementById('idPreview');
-  preview.textContent = val ? val.toLowerCase() + 'cop' : '—';
+  document.getElementById('idPreview').textContent = this.value.trim()
+    ? this.value.trim().toLowerCase() + 'cop' : '—';
 });
-
 document.getElementById('newRunnerInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') addRunner();
 });
 
-// ── Load all data ────────────────────────────────────────────────────────────
+// ── Load all data ─────────────────────────────────────────────────────────────
 
 async function loadAll() {
-  // Step 1: Try to load runner list from config/runners.
-  // This may fail if the Firestore 'config' rule hasn't been added yet —
-  // in that case we fall back to the seed list so the page always renders.
+  // 1 – Runner list from config/runners (fall back to seed if missing/unreadable)
   try {
     const configDoc = await db.collection('config').doc('runners').get();
     if (configDoc.exists) {
       RUNNERS = configDoc.data().all || [...SEED_RUNNERS];
     } else {
-      // First run — seed the config doc
       RUNNERS = [...SEED_RUNNERS];
-      try {
-        await db.collection('config').doc('runners').set({ all: RUNNERS, visible: RUNNERS });
-      } catch(writeErr) {
-        console.warn('Could not seed config/runners (add Firestore rule for config collection):', writeErr.message);
-      }
+      try { await db.collection('config').doc('runners').set({ all: RUNNERS, visible: RUNNERS }); } catch(e) {}
     }
   } catch(e) {
-    console.warn('config/runners not readable yet — using seed list. Add Firestore rule: match /config/{doc} { allow read: if true; allow write: if request.auth != null; }');
+    console.warn('config/runners unreadable — using seed list');
     RUNNERS = [...SEED_RUNNERS];
   }
 
-  // Step 2: Load member data (members collection is always auth-accessible)
+  // 2 – Member docs (also catches runners added outside config)
   try {
     const snap = await db.collection('members').get();
     snap.forEach(doc => {
       memberData[doc.id] = {
         isCoach:    doc.data().isCoach    || false,
         athletes:   doc.data().athletes   || [],
-        showOnPage: doc.data().showOnPage !== false,  // default true
-        priority:   doc.data().priority   ?? 50       // default 50
+        showOnPage: doc.data().showOnPage !== false,
+        priority:   doc.data().priority   ?? 50
       };
-      // If this runner exists in Firestore but not in RUNNERS list
-      // (e.g. added when config was unwritable), add them now
       if (!RUNNERS.includes(doc.id)) RUNNERS.push(doc.id);
     });
-  } catch(e) {
-    console.error('loadAll members error:', e);
-  }
+  } catch(e) { console.error('loadAll members:', e); }
 
-  // Step 3: Load PBs for all runners
+  // 3 – PBs
   try {
-    const pbsSnap = await db.collection('pbs').get();
-    pbsSnap.forEach(doc => {
-      pbData[doc.id] = doc.data().times || [];
-    });
-  } catch(e) {
-    console.error('loadAll pbs error:', e);
-  }
+    const snap = await db.collection('pbs').get();
+    snap.forEach(doc => { pbData[doc.id] = doc.data().times || []; });
+  } catch(e) { console.error('loadAll pbs:', e); }
 
   render();
 }
 
-// ── Save one runner ──────────────────────────────────────────────────────────
+// ── Save one runner ───────────────────────────────────────────────────────────
 
 async function saveRunner(name) {
   setSaveStatus('Saving…');
   try {
-    // Save member doc
     await db.collection('members').doc(name).set({
       isCoach:    memberData[name].isCoach,
       athletes:   memberData[name].athletes,
       showOnPage: memberData[name].showOnPage,
       priority:   memberData[name].priority ?? 50
     }, { merge: true });
-
-    // Keep config/runners.visible in sync
     await syncVisibleConfig();
-
     setSaveStatus('Saved ✓');
     setTimeout(() => setSaveStatus(''), 2000);
   } catch(e) {
-    setSaveStatus('⚠ Error');
-    console.error('save error:', e);
+    setSaveStatus('⚠ Error'); console.error('saveRunner:', e);
   }
 }
-
-// ── Sync visible list in config ──────────────────────────────────────────────
 
 async function syncVisibleConfig() {
-  const visible = RUNNERS.filter(r => {
-    const d = memberData[r];
-    return !d || d.showOnPage !== false;
-  });
-  try {
-    await db.collection('config').doc('runners').set({ visible }, { merge: true });
-  } catch(e) {
-    console.warn('Could not sync config/runners — add Firestore config rule.');
-  }
+  const visible = RUNNERS.filter(r => { const d = memberData[r]; return !d || d.showOnPage !== false; });
+  try { await db.collection('config').doc('runners').set({ visible }, { merge: true }); } catch(e) {}
 }
 
-// ── Add new runner ───────────────────────────────────────────────────────────
+// ── Add runner ────────────────────────────────────────────────────────────────
 
 async function addRunner() {
   const input = document.getElementById('newRunnerInput');
   const raw   = input.value.trim();
   if (!raw) { input.focus(); return; }
-
-  // Capitalise first letter only
   const name = raw.charAt(0).toUpperCase() + raw.slice(1);
-
-  if (RUNNERS.includes(name)) {
-    alert(name + ' already exists.');
-    return;
-  }
+  if (RUNNERS.includes(name)) { alert(name + ' already exists.'); return; }
 
   setSaveStatus('Adding…');
   try {
-    // Create member doc with defaults (hasAccount: false = new user, will be routed to create-password)
     await db.collection('members').doc(name).set({
       isCoach: false, athletes: [], showOnPage: true, priority: 50, hasAccount: false
     }, { merge: true });
-
-    // Update runner list in config
     RUNNERS.push(name);
     memberData[name] = { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
-
     const visible = RUNNERS.filter(r => memberData[r]?.showOnPage !== false);
-    await db.collection('config').doc('runners').set({
-      all: RUNNERS, visible
-    }, { merge: true });
-
+    await db.collection('config').doc('runners').set({ all: RUNNERS, visible }, { merge: true });
     input.value = '';
     document.getElementById('idPreview').textContent = '—';
     setSaveStatus('Added ✓');
     setTimeout(() => setSaveStatus(''), 2000);
     render();
   } catch(e) {
-    setSaveStatus('⚠ Error');
-    console.error('addRunner error:', e);
+    setSaveStatus('⚠ Error'); console.error('addRunner:', e);
   }
 }
 
-// ── Rename runner ────────────────────────────────────────────────────────────
+// ── Rename runner ─────────────────────────────────────────────────────────────
 
 async function renameRunner(oldName, newName) {
   newName = newName.trim();
+  if (!newName) return;
   newName = newName.charAt(0).toUpperCase() + newName.slice(1);
-  if (!newName || newName === oldName) { render(); return; }
-  if (RUNNERS.includes(newName)) { alert(newName + ' already exists.'); render(); return; }
+  if (newName === oldName) return;
+  if (RUNNERS.includes(newName)) { alert(newName + ' already exists.'); return; }
 
   setSaveStatus('Renaming…');
   try {
-    const old = memberData[oldName] || { isCoach: false, athletes: [], showOnPage: true };
-
-    // Copy members doc to new name, delete old
+    const old = memberData[oldName] || { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
     await db.collection('members').doc(newName).set({
       isCoach:    old.isCoach,
       athletes:   old.athletes.map(a => a === oldName ? newName : a),
@@ -593,92 +569,74 @@ async function renameRunner(oldName, newName) {
       priority:   old.priority ?? 50
     }, { merge: true });
     await db.collection('members').doc(oldName).delete();
-
-    // Copy workouts doc
+    // Copy workouts
     try {
       const w = await db.collection('workouts').doc(oldName).get();
-      if (w.exists) {
-        await db.collection('workouts').doc(newName).set(w.data());
-        await db.collection('workouts').doc(oldName).delete();
-      }
+      if (w.exists) { await db.collection('workouts').doc(newName).set(w.data()); await db.collection('workouts').doc(oldName).delete(); }
     } catch(e) {}
-
-    // Copy pbs doc
+    // Copy PBs
     try {
       const p = await db.collection('pbs').doc(oldName).get();
-      if (p.exists) {
-        await db.collection('pbs').doc(newName).set(p.data());
-        await db.collection('pbs').doc(oldName).delete();
-      }
+      if (p.exists) { await db.collection('pbs').doc(newName).set(p.data()); await db.collection('pbs').doc(oldName).delete(); }
     } catch(e) {}
-
-    // Update any coach's athletes list that referenced old name
+    // Update coach athlete lists
     for (const r of RUNNERS) {
       if (r !== oldName && memberData[r]?.athletes?.includes(oldName)) {
         memberData[r].athletes = memberData[r].athletes.map(a => a === oldName ? newName : a);
         await db.collection('members').doc(r).set({ athletes: memberData[r].athletes }, { merge: true });
       }
     }
-
     // Update local state
     const idx = RUNNERS.indexOf(oldName);
     if (idx !== -1) RUNNERS[idx] = newName;
     memberData[newName] = { ...old, athletes: old.athletes.map(a => a === oldName ? newName : a) };
     delete memberData[oldName];
-
-    // Sync config
+    if (pbData[oldName]) { pbData[newName] = pbData[oldName]; delete pbData[oldName]; }
     await syncVisibleConfig();
     try { await db.collection('config').doc('runners').set({ all: RUNNERS }, { merge: true }); } catch(e) {}
-
     setSaveStatus('Renamed ✓');
     setTimeout(() => setSaveStatus(''), 2000);
+    closeRunnerModal();
+    render();
   } catch(e) {
-    setSaveStatus('⚠ Error'); console.error('rename error:', e);
+    setSaveStatus('⚠ Error'); console.error('renameRunner:', e);
   }
-  render();
 }
 
 // ── Delete runner ─────────────────────────────────────────────────────────────
 
 async function deleteRunner(name) {
   if (!confirm('Remove ' + name + ' from Mall Cops?\n\nThis permanently deletes their profile, workouts and PBs.')) return;
-
   setSaveStatus('Deleting…');
   try {
-    // Remove from other coaches' athlete lists first
     for (const r of RUNNERS) {
       if (r !== name && memberData[r]?.athletes?.includes(name)) {
         memberData[r].athletes = memberData[r].athletes.filter(a => a !== name);
         await db.collection('members').doc(r).set({ athletes: memberData[r].athletes }, { merge: true });
       }
     }
-
-    // Delete Firestore docs
     await db.collection('members').doc(name).delete();
     try { await db.collection('workouts').doc(name).delete(); } catch(e) {}
     try { await db.collection('pbs').doc(name).delete(); } catch(e) {}
-
-    // Update local state
     RUNNERS = RUNNERS.filter(r => r !== name);
     delete memberData[name];
-
-    // Sync config
+    delete pbData[name];
     try {
       await db.collection('config').doc('runners').set({
-        all:     RUNNERS,
+        all: RUNNERS,
         visible: RUNNERS.filter(r => memberData[r]?.showOnPage !== false)
       }, { merge: true });
     } catch(e) {}
-
     setSaveStatus('Deleted ✓');
     setTimeout(() => setSaveStatus(''), 2000);
+    closeRunnerModal();
+    render();
   } catch(e) {
-    setSaveStatus('⚠ Error'); console.error('delete error:', e);
+    setSaveStatus('⚠ Error'); console.error('deleteRunner:', e);
   }
-  render();
 }
 
-// ── PBs management ───────────────────────────────────────────────────────────
+// ── PBs ───────────────────────────────────────────────────────────────────────
 
 async function addPB(name, time) {
   time = time.trim();
@@ -690,11 +648,8 @@ async function addPB(name, time) {
     await db.collection('pbs').doc(name).set({ times: pbData[name] });
     setSaveStatus('Saved ✓');
     setTimeout(() => setSaveStatus(''), 2000);
-  } catch(e) {
-    setSaveStatus('⚠ Error');
-    console.error('addPB error:', e);
-  }
-  render();
+  } catch(e) { setSaveStatus('⚠ Error'); console.error('addPB:', e); }
+  renderModal(name);   // refresh modal only — no need to re-render the list
 }
 
 async function deletePB(name, idx) {
@@ -705,152 +660,96 @@ async function deletePB(name, idx) {
     await db.collection('pbs').doc(name).set({ times: pbData[name] });
     setSaveStatus('Saved ✓');
     setTimeout(() => setSaveStatus(''), 2000);
-  } catch(e) {
-    setSaveStatus('⚠ Error');
-    console.error('deletePB error:', e);
-  }
-  render();
+  } catch(e) { setSaveStatus('⚠ Error'); console.error('deletePB:', e); }
+  renderModal(name);
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 
-function render() {
-  const list = document.getElementById('runnerList');
-  list.innerHTML = '';
+function openRunnerModal(name) {
+  activeRunner = name;
+  renderModal(name);
+  document.getElementById('runnerOverlay').classList.add('open');
+}
 
-  // Show runners sorted by priority descending (highest first)
-  const sorted = [...RUNNERS].sort((a, b) => {
-    const pa = memberData[a]?.priority ?? 50;
-    const pb = memberData[b]?.priority ?? 50;
-    return pb - pa;
+function closeRunnerModal() {
+  document.getElementById('runnerOverlay').classList.remove('open');
+  activeRunner = null;
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('runnerOverlay')) closeRunnerModal();
+}
+
+function renderModal(name) {
+  const data  = memberData[name] || { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
+  const times = pbData[name] || [];
+
+  document.getElementById('modalTitle').textContent = name.toUpperCase();
+  document.getElementById('modalSub').textContent   = 'Login ID: ' + name.toLowerCase() + 'cop';
+
+  const body = document.getElementById('modalBody');
+  body.innerHTML = '';
+
+  // ── SETTINGS ──────────────────────────────────────────────────────────────
+  const settingsSec = makeSec('SETTINGS');
+
+  const prioField = document.createElement('div');
+  prioField.className = 'field';
+  const prioLbl = document.createElement('label');
+  prioLbl.className = 'field-label';
+  prioLbl.textContent = 'FRONT PAGE PRIORITY (1 – 100)';
+  const prioInput = document.createElement('input');
+  prioInput.className = 'form-input';
+  prioInput.type = 'number'; prioInput.min = 1; prioInput.max = 100;
+  prioInput.value = data.priority ?? 50;
+  prioInput.addEventListener('change', function() {
+    const val = Math.min(100, Math.max(1, parseInt(this.value) || 50));
+    this.value = val;
+    if (!memberData[name]) memberData[name] = { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
+    memberData[name].priority = val;
+    saveRunner(name);
+    render();   // re-sort the list
   });
+  prioField.appendChild(prioLbl);
+  prioField.appendChild(prioInput);
+  settingsSec.appendChild(prioField);
 
-  sorted.forEach(name => {
-    const data = memberData[name] || { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
-
-    const card = document.createElement('div');
-    card.className = 'runner-card' + (data.isCoach ? ' is-coach' : '');
-    card.id = 'card-' + name;
-
-    // ── Head row ──
-    const head = document.createElement('div');
-    head.className = 'runner-head';
-
-    // Name — click pencil to edit inline
-    const nameEl = document.createElement('div');
-    nameEl.className = 'runner-name';
-    nameEl.textContent = name.toUpperCase();
-
-    const badge = document.createElement('span');
-    badge.className = 'coach-badge';
-    badge.textContent = 'COACH';
-
-    // Priority input
-    const prioWrap = document.createElement('div');
-    prioWrap.className = 'priority-wrap';
-    prioWrap.title = 'Priority on front page (1–100, higher = first)';
-    const prioLabel = document.createElement('span');
-    prioLabel.className = 'priority-label';
-    prioLabel.textContent = 'PRIO';
-    const prioInput = document.createElement('input');
-    prioInput.className = 'priority-input';
-    prioInput.type = 'number';
-    prioInput.min = 1; prioInput.max = 100;
-    prioInput.value = data.priority ?? 50;
-    prioInput.addEventListener('change', function() {
-      const val = Math.min(100, Math.max(1, parseInt(this.value) || 50));
-      this.value = val;
+  settingsSec.appendChild(makeToggle(
+    'SHOW ON FRONT PAGE',
+    data.showOnPage !== false,
+    'page-toggle',
+    () => {
       if (!memberData[name]) memberData[name] = { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
-      memberData[name].priority = val;
+      memberData[name].showOnPage = !memberData[name].showOnPage;
       saveRunner(name);
-      // Re-sort the cards without full re-render (just resort visually)
       render();
-    });
-    prioWrap.appendChild(prioLabel);
-    prioWrap.appendChild(prioInput);
+      renderModal(name);
+    }
+  ));
 
-    // Edit button
-    const editBtn = document.createElement('button');
-    editBtn.className = 'icon-btn edit-btn';
-    editBtn.title = 'Rename';
-    editBtn.textContent = '✏';
-    editBtn.addEventListener('click', () => {
-      // Swap name div for an input + confirm/cancel
-      const input = document.createElement('input');
-      input.className = 'name-input';
-      input.value = name;
-      input.maxLength = 30;
-      const confirmBtn = document.createElement('button');
-      confirmBtn.className = 'icon-btn confirm-btn';
-      confirmBtn.textContent = '✓';
-      const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'icon-btn cancel-btn';
-      cancelBtn.textContent = '✕';
-      head.replaceChild(input, nameEl);
-      head.replaceChild(confirmBtn, editBtn);
-      head.replaceChild(cancelBtn, deleteBtn);
-      input.focus(); input.select();
-      const doRename = () => renameRunner(name, input.value);
-      confirmBtn.addEventListener('click', doRename);
-      cancelBtn.addEventListener('click', render);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') doRename();
-        if (e.key === 'Escape') render();
-      });
-    });
+  settingsSec.appendChild(Object.assign(document.createElement('div'), { className: 'toggle-divider' }));
 
-    // Delete button
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'icon-btn delete-btn';
-    deleteBtn.title = 'Delete runner';
-    deleteBtn.textContent = '🗑';
-    deleteBtn.addEventListener('click', () => deleteRunner(name));
-
-    // Coach toggle
-    const coachToggle = document.createElement('div');
-    coachToggle.className = 'toggle-wrap' + (data.isCoach ? ' active' : '');
-    coachToggle.innerHTML = `<div class="toggle-track"><div class="toggle-knob"></div></div><span>${data.isCoach ? 'COACH' : 'COACH'}</span>`;
-    coachToggle.addEventListener('click', () => {
-      if (!memberData[name]) memberData[name] = { isCoach: false, athletes: [], showOnPage: true };
+  settingsSec.appendChild(makeToggle(
+    'IS COACH',
+    data.isCoach,
+    '',
+    () => {
+      if (!memberData[name]) memberData[name] = { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
       memberData[name].isCoach = !memberData[name].isCoach;
       if (!memberData[name].isCoach) memberData[name].athletes = [];
       saveRunner(name);
       render();
-    });
+      renderModal(name);
+    }
+  ));
+  body.appendChild(settingsSec);
 
-    // Page visibility toggle
-    const pageOn = data.showOnPage !== false;
-    const pageToggle = document.createElement('div');
-    pageToggle.className = 'toggle-wrap page-toggle' + (pageOn ? ' active' : '');
-    pageToggle.title = 'Show on front page';
-    pageToggle.innerHTML = `<div class="toggle-track"><div class="toggle-knob"></div></div><span>PAGE</span>`;
-    pageToggle.addEventListener('click', () => {
-      if (!memberData[name]) memberData[name] = { isCoach: false, athletes: [], showOnPage: true };
-      memberData[name].showOnPage = !memberData[name].showOnPage;
-      saveRunner(name);
-      render();
-    });
-
-    head.appendChild(nameEl);
-    head.appendChild(badge);
-    head.appendChild(prioWrap);
-    head.appendChild(editBtn);
-    head.appendChild(pageToggle);
-    head.appendChild(coachToggle);
-    head.appendChild(deleteBtn);
-
-    // ── Athletes section ──
-    const athleteSection = document.createElement('div');
-    athleteSection.className = 'athletes-section';
-
-    const lbl = document.createElement('div');
-    lbl.className = 'athletes-label';
-    lbl.textContent = 'ASSIGNED ATHLETES';
-    athleteSection.appendChild(lbl);
-
+  // ── ATHLETES (only when coach) ─────────────────────────────────────────────
+  if (data.isCoach) {
+    const athleteSec = makeSec('ASSIGNED ATHLETES');
     const chips = document.createElement('div');
     chips.className = 'athlete-checks';
-
     RUNNERS.forEach(athlete => {
       if (athlete === name) return;
       const assigned = (data.athletes || []).includes(athlete);
@@ -869,69 +768,149 @@ function render() {
       });
       chips.appendChild(chip);
     });
+    athleteSec.appendChild(chips);
+    body.appendChild(athleteSec);
+  }
 
-    athleteSection.appendChild(chips);
+  // ── PERSONAL BESTS ─────────────────────────────────────────────────────────
+  const pbSec = makeSec('PERSONAL BESTS');
 
-    // ── PBs section ──
-    const pbSection = document.createElement('div');
-    pbSection.className = 'pbs-section';
+  const pbList = document.createElement('div');
+  pbList.className = 'pb-list';
+  if (times.length === 0) {
+    const none = document.createElement('span');
+    none.className = 'pb-none';
+    none.textContent = 'No PBs recorded yet';
+    pbList.appendChild(none);
+  } else {
+    times.forEach((t, idx) => {
+      const item = document.createElement('div');
+      item.className = 'pb-item';
+      const txt = document.createElement('span'); txt.textContent = t;
+      const del = document.createElement('button');
+      del.className = 'pb-del'; del.title = 'Remove'; del.textContent = '×';
+      del.addEventListener('click', () => deletePB(name, idx));
+      item.appendChild(txt); item.appendChild(del);
+      pbList.appendChild(item);
+    });
+  }
+  pbSec.appendChild(pbList);
 
-    const pbLbl = document.createElement('div');
-    pbLbl.className = 'pbs-label';
-    pbLbl.textContent = 'PERSONAL BESTS';
-    pbSection.appendChild(pbLbl);
+  const pbAddRow = document.createElement('div');
+  pbAddRow.className = 'add-row';
+  const pbInput = document.createElement('input');
+  pbInput.className = 'form-input'; pbInput.type = 'text';
+  pbInput.placeholder = 'e.g. 5K: 21:30'; pbInput.maxLength = 60;
+  const pbAddBtn = document.createElement('button');
+  pbAddBtn.className = 'add-btn'; pbAddBtn.textContent = '+ ADD';
+  pbAddBtn.addEventListener('click', () => addPB(name, pbInput.value));
+  pbInput.addEventListener('keydown', e => { if (e.key === 'Enter') addPB(name, pbInput.value); });
+  pbAddRow.appendChild(pbInput);
+  pbAddRow.appendChild(pbAddBtn);
+  pbSec.appendChild(pbAddRow);
+  body.appendChild(pbSec);
 
-    const pbList = document.createElement('div');
-    pbList.className = 'pb-list';
+  // ── RENAME ─────────────────────────────────────────────────────────────────
+  const renameSec = makeSec('RENAME RUNNER');
+  const renameRow = document.createElement('div');
+  renameRow.className = 'add-row';
+  const renameInput = document.createElement('input');
+  renameInput.className = 'form-input'; renameInput.type = 'text';
+  renameInput.placeholder = 'New first name'; renameInput.maxLength = 30;
+  renameInput.value = name;
+  const renameBtn = document.createElement('button');
+  renameBtn.className = 'add-btn rename-btn'; renameBtn.textContent = 'RENAME';
+  renameBtn.addEventListener('click', () => renameRunner(name, renameInput.value));
+  renameInput.addEventListener('keydown', e => { if (e.key === 'Enter') renameRunner(name, renameInput.value); });
+  renameRow.appendChild(renameInput);
+  renameRow.appendChild(renameBtn);
+  renameSec.appendChild(renameRow);
+  body.appendChild(renameSec);
 
-    const times = pbData[name] || [];
-    if (times.length === 0) {
-      const none = document.createElement('span');
-      none.className = 'pb-none';
-      none.textContent = 'No PBs recorded yet';
-      pbList.appendChild(none);
-    } else {
-      times.forEach((t, idx) => {
-        const item = document.createElement('div');
-        item.className = 'pb-item';
-        const txt = document.createElement('span');
-        txt.textContent = t;
-        const del = document.createElement('button');
-        del.className = 'pb-del';
-        del.title = 'Remove this PB';
-        del.textContent = '×';
-        del.addEventListener('click', () => deletePB(name, idx));
-        item.appendChild(txt);
-        item.appendChild(del);
-        pbList.appendChild(item);
-      });
+  // ── DELETE ─────────────────────────────────────────────────────────────────
+  const deleteSec = document.createElement('div');
+  deleteSec.className = 'modal-section';
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn-delete';
+  deleteBtn.textContent = '🗑  DELETE ' + name.toUpperCase();
+  deleteBtn.addEventListener('click', () => deleteRunner(name));
+  deleteSec.appendChild(deleteBtn);
+  body.appendChild(deleteSec);
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+
+function makeSec(label) {
+  const sec = document.createElement('div');
+  sec.className = 'modal-section';
+  const lbl = document.createElement('div');
+  lbl.className = 'section-label';
+  lbl.textContent = label;
+  sec.appendChild(lbl);
+  return sec;
+}
+
+function makeToggle(label, isActive, extraClass, onClick) {
+  const wrap = document.createElement('div');
+  wrap.className = 'toggle-wrap' + (extraClass ? ' ' + extraClass : '') + (isActive ? ' active' : '');
+  wrap.innerHTML = `<div class="toggle-track"><div class="toggle-knob"></div></div><span>${label}</span>`;
+  wrap.addEventListener('click', onClick);
+  return wrap;
+}
+
+// ── Render list ───────────────────────────────────────────────────────────────
+
+function render() {
+  const list = document.getElementById('runnerList');
+  list.innerHTML = '';
+
+  const sorted = [...RUNNERS].sort((a, b) => {
+    const pa = memberData[a]?.priority ?? 50;
+    const pb = memberData[b]?.priority ?? 50;
+    return pb - pa;
+  });
+
+  sorted.forEach(name => {
+    const data = memberData[name] || { isCoach: false, athletes: [], showOnPage: true, priority: 50 };
+
+    const row = document.createElement('div');
+    row.className = 'runner-row';
+    row.addEventListener('click', () => openRunnerModal(name));
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'row-name';
+    nameEl.textContent = name.toUpperCase();
+
+    const tags = document.createElement('span');
+    tags.className = 'row-tags';
+    if (data.isCoach) {
+      const t = document.createElement('span');
+      t.className = 'row-tag coach'; t.textContent = 'COACH';
+      tags.appendChild(t);
     }
-    pbSection.appendChild(pbList);
+    if (!data.showOnPage) {
+      const t = document.createElement('span');
+      t.className = 'row-tag hidden'; t.textContent = 'HIDDEN';
+      tags.appendChild(t);
+    }
 
-    const pbAddRow = document.createElement('div');
-    pbAddRow.className = 'pb-add-row';
-    const pbInput = document.createElement('input');
-    pbInput.className = 'pb-add-input';
-    pbInput.type = 'text';
-    pbInput.placeholder = 'e.g. 5K: 21:30';
-    pbInput.maxLength = 60;
-    const pbAddBtn = document.createElement('button');
-    pbAddBtn.className = 'pb-add-btn';
-    pbAddBtn.textContent = '+ ADD';
-    pbAddBtn.addEventListener('click', () => addPB(name, pbInput.value));
-    pbInput.addEventListener('keydown', e => { if (e.key === 'Enter') addPB(name, pbInput.value); });
-    pbAddRow.appendChild(pbInput);
-    pbAddRow.appendChild(pbAddBtn);
-    pbSection.appendChild(pbAddRow);
+    const prio = document.createElement('span');
+    prio.className = 'row-prio';
+    prio.textContent = data.priority ?? 50;
 
-    card.appendChild(head);
-    card.appendChild(athleteSection);
-    card.appendChild(pbSection);
-    list.appendChild(card);
+    const arrow = document.createElement('span');
+    arrow.className = 'row-arrow';
+    arrow.textContent = '›';
+
+    row.appendChild(nameEl);
+    row.appendChild(tags);
+    row.appendChild(prio);
+    row.appendChild(arrow);
+    list.appendChild(row);
   });
 }
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────────────────
 
 auth.onAuthStateChanged(function(authUser) {
   if (!authUser) { window.location.href = 'login.html'; return; }
