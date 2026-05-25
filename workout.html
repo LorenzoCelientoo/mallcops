@@ -841,6 +841,10 @@
       opacity: 0.38; margin: 10px 0 5px;
     }
     .tpl-section-label:first-child { margin-top: 0; }
+    .template-item-lock {
+      font-size: 9px; opacity: 0.35; flex-shrink: 0;
+      letter-spacing: 0;
+    }
     .template-item {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 10px; border-radius: var(--r);
@@ -1294,6 +1298,11 @@ function makeTplItem(tpl, isShared) {
   name.textContent = isShared ? `${tpl.name || 'Untitled'} (${tpl.createdBy})` : (tpl.name || 'Untitled');
   const type = document.createElement('div'); type.className = 'template-item-type'; type.textContent = ti.label;
   item.appendChild(dot); item.appendChild(name); item.appendChild(type);
+  if (isShared) {
+    const lock = document.createElement('span');
+    lock.className = 'template-item-lock'; lock.textContent = '🔒';
+    item.appendChild(lock);
+  }
 
   // Delete button — own templates only
   if (!isShared) {
@@ -1313,8 +1322,9 @@ function makeTplItem(tpl, isShared) {
     item.appendChild(del);
     item.addEventListener('click', () => openModalForTemplate(tpl.id));
   } else {
-    // Shared template: click to open as a copy
-    item.addEventListener('click', () => openSharedTemplateAsCopy(tpl));
+    // Shared template: click to schedule as a workout (not edit the template)
+    item.title = 'Click to schedule for today';
+    item.addEventListener('click', () => scheduleSharedTemplate(tpl));
   }
   return item;
 }
@@ -1366,22 +1376,25 @@ function openModalForTemplate(templateId) {
   document.getElementById('overlay').classList.add('open');
 }
 
-// ── Open a shared template as a new copy ─────────────────────────────────────
+// ── Schedule a shared template as a workout (read-only — does not edit the template) ──
 
-function openSharedTemplateAsCopy(tpl) {
-  openModalForTemplate(null);   // open as new template with defaults
-  // Override with the shared template's content
-  document.getElementById('templateNameInput').value = tpl.name || '';
-  selType    = tpl.type    || 'intervals';
-  selSubtype = tpl.subtype || 'easy';
+function scheduleSharedTemplate(tpl) {
+  // Open the workout scheduling modal for today, pre-filled with the template data.
+  // The runner can adjust details before saving — Lorenzo's original template is never touched.
+  const now = new Date();
+  const key = dateKey(now.getFullYear(), now.getMonth(), now.getDate());
+  openModal(key, null);   // standard workout modal, new entry for today
+
+  // Override defaults with template data
+  selType     = tpl.type    || 'easy';
+  selSubtype  = tpl.subtype || 'easy';
   builderData = tpl.structure ? JSON.parse(JSON.stringify(tpl.structure)) : null;
-  document.getElementById('distInput').value = tpl.dist     || '';
-  document.getElementById('paceInput').value = tpl.pace     || '';
-  document.getElementById('durInput').value  = tpl.duration || '';
-  // Default to private for the copy
-  document.getElementById('tplToggleTrack').classList.remove('on');
-  document.getElementById('tplToggleLabel').textContent = 'Private – only visible to you';
-  document.getElementById('modalTitle').textContent     = 'Copy Template';
+  document.getElementById('distInput').value  = tpl.dist     || '';
+  document.getElementById('paceInput').value  = tpl.pace     || '';
+  document.getElementById('durInput').value   = tpl.duration || '';
+
+  // Title shows who created the template
+  document.getElementById('modalTitle').textContent = (tpl.name || 'Workout') + ' (' + tpl.createdBy + ')';
   renderTypePills(); syncToggle();
 }
 
