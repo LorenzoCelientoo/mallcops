@@ -1919,13 +1919,13 @@ function buildWeekPage(weekStart, weekEnd) {
 
   const tbl = document.createElement('table'); tbl.className = 'pv-week-table';
   tbl.innerHTML = '<colgroup>'
-    + '<col class="col-day"><col class="col-date"><col class="col-type">'
+    + '<col class="col-day"><col class="col-type">'
     + '<col class="col-det"><col class="col-eff"><col class="col-notes">'
     + '</colgroup>';
 
   const thead = document.createElement('thead');
   const hrow  = document.createElement('tr');
-  ['DAY','DATE','WORKOUT','DETAILS','EFFORT','NOTES'].forEach(h => {
+  ['DAY / DATE','WORKOUT','DETAILS','EFFORT','NOTES'].forEach(h => {
     const th = document.createElement('th'); th.textContent = h; hrow.appendChild(th);
   });
   thead.appendChild(hrow); tbl.appendChild(thead);
@@ -1944,15 +1944,11 @@ function buildWeekPage(weekStart, weekEnd) {
     const row = document.createElement('tr');
     row.className = 'pv-week-row' + (i % 2 === 1 ? ' pv-alt' : '') + (!inMonth ? ' pv-off' : '');
 
-    // DAY
+    // DAY + DATE (merged into one cell)
     const tdDay = document.createElement('td');
-    tdDay.innerHTML = '<div class="pv-wday">' + DSHORT[i] + '</div>';
+    tdDay.innerHTML = '<div class="pv-wday">' + DSHORT[i] + '</div>'
+      + '<div class="pv-wdate">' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div>';
     row.appendChild(tdDay);
-
-    // DATE
-    const tdDate = document.createElement('td');
-    tdDate.innerHTML = '<div class="pv-wdate">' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div>';
-    row.appendChild(tdDate);
 
     // WORKOUT TYPE
     const tdType = document.createElement('td');

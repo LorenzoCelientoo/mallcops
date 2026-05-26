@@ -1003,13 +1003,12 @@
 .pv-week-table {
   width: 100%; border-collapse: collapse; table-layout: fixed;
 }
-/* Column widths */
-.pv-week-table .col-day   { width: 6%; }
-.pv-week-table .col-date  { width: 7%; }
-.pv-week-table .col-type  { width: 14%; }
-.pv-week-table .col-det   { width: 37%; }
-.pv-week-table .col-eff   { width: 13%; }
-.pv-week-table .col-notes { width: 23%; }
+/* Column widths — 5 columns (day+date merged) */
+.pv-week-table .col-day   { width: 10%; }  /* day + date stacked */
+.pv-week-table .col-type  { width: 13%; }
+.pv-week-table .col-det   { width: 38%; }
+.pv-week-table .col-eff   { width: 17%; }
+.pv-week-table .col-notes { width: 22%; }
 
 /* Header row */
 .pv-week-table thead th {
@@ -1044,24 +1043,27 @@
 }
 .pv-rest-lbl { font-size: 10px; color: rgba(26,34,64,0.35); font-style: italic; }
 
-/* Detail cell: WU / Block / CD lines */
-.pv-det-row { font-size: 10.5px; line-height: 1.6; color: #1a2240; }
+/* Detail cell: WU / Block / CD lines — compact to fit ~5 lines in 74px wrapper */
+.pv-det-row { font-size: 9.5px; line-height: 1.35; color: #1a2240; }
 .pv-det-lbl {
-  font-family: 'Bebas Neue', sans-serif; font-size: 10.5px; letter-spacing: 0.08em;
+  font-family: 'Bebas Neue', sans-serif; font-size: 9.5px; letter-spacing: 0.08em;
 }
 .pv-det-hard .pv-det-lbl { color: #C8392B; }
 .pv-det-easy .pv-det-lbl { color: #2E7D5B; }
-.pv-det-simple { font-size: 10.5px; color: #1a2240; margin-bottom: 2px; }
+.pv-det-simple { font-size: 9.5px; color: #1a2240; margin-bottom: 0; }
 
-/* Effort dots */
+/* Effort dots — 5×2 grid so they always render as exactly 2 rows */
 .pv-effort-dots {
-  display: flex; flex-wrap: wrap; gap: 3px;
-  justify-content: center; padding-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(5, 13px);
+  gap: 2px;
+  padding-top: 4px;
+  justify-content: center;
 }
 .pv-edot {
-  width: 17px; height: 17px; border-radius: 50%;
+  width: 13px; height: 13px; border-radius: 50%;
   border: 1.5px solid #ccc;
-  font-size: 8px; font-family: 'Barlow', sans-serif;
+  font-size: 7px; font-family: 'Barlow', sans-serif;
   display: flex; align-items: center; justify-content: center;
   color: rgba(26,34,64,0.4);
 }
