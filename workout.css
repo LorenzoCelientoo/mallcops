@@ -977,7 +977,7 @@
 }
 .pv-cal-table td {
   border: 1px solid #ccc; vertical-align: top;
-  padding: 6px 7px 4px; height: 155px;
+  padding: 6px 7px 4px; height: 145px;
   background: white;
 }
 .pv-cal-table td.pv-other { opacity: 0.28; background: white; }
@@ -1019,7 +1019,7 @@
 .pv-week-row td {
   border: 1px solid #ddd; vertical-align: top;
   padding: 8px 9px; font-size: 11px; color: #1a2240;
-  height: 133px; background: white;
+  height: 118px; background: white;
 }
 .pv-week-row.pv-alt td { background: white; }
 .pv-week-row.pv-off td { opacity: 0.3; background: white; }
