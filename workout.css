@@ -912,6 +912,44 @@
   .pv-week-row   { break-inside: avoid; page-break-inside: avoid; }
 }
 
+/* ── Race hero ── */
+/* Sits above the month header; height fills the blank bottom space of the calendar page.
+   Font size is set inline by JS (adapts to row count + DPI mode). */
+.pv-race-hero {
+  padding: 6px 0 12px;
+  border-bottom: 1px solid rgba(26,34,64,0.18);
+  margin-bottom: 9px;
+}
+.pv-race-hero-compact {
+  padding: 4px 0 8px;
+  margin-bottom: 7px;
+}
+.pv-race-pre {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.5em;
+  color: #C8392B;
+  margin-bottom: 1px;
+  line-height: 1;
+}
+.pv-race-name {
+  font-family: 'Bebas Neue', sans-serif;
+  /* font-size set inline by JS */
+  letter-spacing: 0.02em;
+  color: #1a2240;
+  word-break: break-word;
+  line-height: 0.92;
+}
+.pv-race-date {
+  font-family: 'Barlow', sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  color: rgba(26,34,64,0.38);
+  margin-top: 7px;
+  line-height: 1;
+}
+
 /* ── Shared base ── */
 .pv-page {
   background: white;

@@ -67,6 +67,7 @@ async function loadWorkoutsFor(name) {
   workouts  = {};
   templates = [];
   document.getElementById('raceDateInput').value = '';
+  document.getElementById('raceNameInput').value = '';
   document.getElementById('raceCountdownText').textContent = '';
   try {
     const doc = await db.collection('workouts').doc(name).get();
@@ -74,6 +75,7 @@ async function loadWorkoutsFor(name) {
       const d = doc.data();
       workouts  = d.data      || {};
       templates = d.templates || [];
+      if (d.raceName) document.getElementById('raceNameInput').value = d.raceName;
       if (d.raceDate) {
         document.getElementById('raceDateInput').value = d.raceDate;
         updateRaceCountdown(d.raceDate);
@@ -128,9 +130,11 @@ async function load() {
 function save() {
   setSaveStatus('Saving…');
   const raceDate = document.getElementById('raceDateInput').value || null;
+  const raceName = document.getElementById('raceNameInput').value.trim() || null;
   db.collection('workouts').doc(viewingAs).set({
     data: workouts,
     raceDate,
+    raceName,
     templates,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   })
@@ -1357,6 +1361,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 document.getElementById('fab').addEventListener('click', () => { const t = new Date(); openModal(dateKey(t.getFullYear(), t.getMonth(), t.getDate()), null); });
 
 document.getElementById('raceDateInput').addEventListener('change', e => { updateRaceCountdown(e.target.value); save(); });
+document.getElementById('raceNameInput').addEventListener('change', () => save());
 
 // ── Statistics ─────────────────────────────────────────────────────────────
 
@@ -1848,7 +1853,7 @@ function buildPrintView(isHighDPI) {
   const pv = document.createElement('div'); pv.id = 'printView';
   if (isHighDPI) pv.classList.add('pv-hires');  // triggers larger CSS overrides
 
-  pv.appendChild(buildMonthPage());
+  pv.appendChild(buildMonthPage(isHighDPI));
   const monthStart = new Date(viewYear, viewMonth, 1);
   const monthEnd   = new Date(viewYear, viewMonth + 1, 0);
   let ws = new Date(monthStart);
@@ -1862,10 +1867,50 @@ function buildPrintView(isHighDPI) {
   document.body.appendChild(pv);
 }
 
-// ── Month page (landscape) ────────────────────────────────────────────────────
-function buildMonthPage() {
+// ── Month page (portrait) ─────────────────────────────────────────────────────
+function buildMonthPage(isHighDPI = false) {
   const page = document.createElement('div');
   page.className = 'pv-page pv-month-page';
+
+  // ── Pre-calculate number of calendar rows so we can size the hero ──────────
+  const _firstDay = new Date(viewYear, viewMonth, 1);
+  let   _off = _firstDay.getDay(); _off = _off === 0 ? 6 : _off - 1;
+  const _last = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const numRows = Math.ceil((_off + _last) / 7);  // 4, 5 or 6
+
+  // ── Race hero (shown only when a race name is set) ─────────────────────────
+  // Font size is adaptive: smaller for 6-row months (less vertical room),
+  // larger for Chrome (96 dpi, more page height).
+  //
+  //            Safari (72 dpi, ~785px)    Chrome (96 dpi, ~1047px)
+  //  4 rows        86px                      116px
+  //  5 rows        76px                      108px
+  //  6 rows        36px                       48px
+  //
+  const raceName = (document.getElementById('raceNameInput').value || '').trim().toUpperCase();
+  if (raceName) {
+    const compact = numRows >= 6;
+    const nameFontSize = isHighDPI
+      ? (numRows <= 4 ? 116 : compact ? 48 : 108)
+      : (numRows <= 4 ?  86 : compact ? 36 :  76);
+
+    const raceDate = document.getElementById('raceDateInput').value;
+    let   dateLine = '';
+    if (raceDate) {
+      const rd = new Date(raceDate + 'T00:00:00');
+      dateLine = '<div class="pv-race-date">'
+        + rd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()
+        + '</div>';
+    }
+
+    const hero = document.createElement('div');
+    hero.className = 'pv-race-hero' + (compact ? ' pv-race-hero-compact' : '');
+    hero.innerHTML = (compact ? '' : '<div class="pv-race-pre">PREPARING FOR</div>')
+      + '<div class="pv-race-name" style="font-size:' + nameFontSize + 'px;line-height:0.92">'
+      + raceName + '</div>'
+      + dateLine;
+    page.appendChild(hero);
+  }
 
   const hdr = document.createElement('div'); hdr.className = 'pv-hdr';
   const athleteName = (viewingAs || currentUser).toUpperCase();
