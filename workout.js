@@ -2018,7 +2018,7 @@ function buildWeekPage(weekStart, weekEnd) {
     const noteLbl  = document.createElement('span'); noteLbl.className = 'pv-notes-lbl'; noteLbl.textContent = 'Notes:';
     tdNotes.appendChild(noteLbl);
     const noteText = ws.length && ws[0].notes ? ws[0].notes : '';
-    for (let n = 0; n < 4; n++) {
+    for (let n = 0; n < 3; n++) {
       const line = document.createElement('div'); line.className = 'pv-note-line';
       if (n === 0 && noteText) line.textContent = noteText;
       tdNotes.appendChild(line);

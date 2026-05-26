@@ -979,7 +979,7 @@
 }
 .pv-cal-table td {
   border: 1px solid #ccc; vertical-align: top;
-  padding: 6px 7px 4px; height: 145px;
+  padding: 6px 7px 4px; height: 108px; overflow: hidden;
   background: white;
 }
 .pv-cal-table td.pv-other { opacity: 0.28; background: white; }
@@ -1021,13 +1021,13 @@
 .pv-week-row td {
   border: 1px solid #ddd; vertical-align: top;
   padding: 8px 9px; font-size: 11px; color: #1a2240;
-  height: 110px; max-height: 110px; overflow: hidden; background: white;
+  height: 90px; max-height: 90px; overflow: hidden; background: white;
 }
 .pv-week-row.pv-alt td { background: white; }
 .pv-week-row.pv-off td { opacity: 0.3; background: white; }
 
 /* Inner cell wrapper — reliably caps content height (max-height is ignored on td) */
-.pv-cell-wrap { height: 94px; overflow: hidden; }
+.pv-cell-wrap { height: 74px; overflow: hidden; }
 
 /* Day cell */
 .pv-wday {
@@ -1073,7 +1073,7 @@
   margin-bottom: 4px; display: block;
 }
 .pv-note-line {
-  border-bottom: 1px solid #ccc; height: 19px; margin-bottom: 4px;
+  border-bottom: 1px solid #ccc; height: 15px; margin-bottom: 3px;
   font-size: 9px; color: rgba(26,34,64,0.55);
 }
 
