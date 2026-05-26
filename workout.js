@@ -1698,43 +1698,64 @@ function exportPDF() {
   const pv = document.getElementById('printView');
 
   const ua = navigator.userAgent;
-  const isIOS       = /iPad|iPhone|iPod/.test(ua);
-  const isMacSafari = !isIOS && /Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua) && !/CriOS/.test(ua);
-  const needsOverlay = isIOS || isMacSafari;
+  const isIOS    = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = !isIOS && /Safari/.test(ua) && !/Chrome|Chromium|CriOS|EdgA|Firefox/.test(ua);
 
-  if (needsOverlay) {
-    const tip = isIOS
-      ? 'Tap <strong>SAVE AS PDF</strong> &rarr; Print &rarr; Share &rarr; Save to Files'
-      : 'Click <strong>SAVE AS PDF</strong> &rarr; in the print dialog choose <strong>Save as PDF</strong>';
+  if (isIOS || isSafari) {
+    // ── Safari / iOS: open a self-contained print page in a new tab ──────────
+    //
+    // Why not window.print() here?  The old overlay approach (calling
+    // window.print() from an inline onclick on a dynamically created button)
+    // was unreliable on Safari — the gesture context got lost between DOM
+    // manipulation steps.
+    //
+    // New approach: build a complete standalone HTML document with all CSS
+    // inlined, open it via window.open() (allowed from synchronous onclick),
+    // and let IT call window.print() on its own load event.  No overlays,
+    // no timing hacks, no gesture-context juggling.
 
-    const overlay = document.createElement('div');
-    overlay.id = 'pdf-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:white;display:flex;flex-direction:column;';
-    // Inline onclick only — Safari ignores window.print() from addEventListener.
-    // On SAVE AS PDF: dismiss the overlay first, then print immediately (synchronous,
-    // keeps user-gesture context), then clean up printView after 2s.
-    const printScript = "var o=document.getElementById('pdf-overlay');if(o)o.remove();"
-      + "var p=document.getElementById('printView');"
-      + "this.innerHTML='&#8987;&nbsp;Opening...';this.disabled=true;"
-      + "window.print();"
-      + "setTimeout(function(){if(p)p.remove();},2000);";
-    const closeScript = "var o=document.getElementById('pdf-overlay');if(o)o.remove();"
-      + "var p=document.getElementById('printView');if(p)p.remove();";
+    // Extract same-origin CSS rules (cross-origin sheets like Google Fonts CDN
+    // throw SecurityError on .cssRules — we catch those and skip).
+    let allCSS = '';
+    for (const ss of document.styleSheets) {
+      try {
+        for (const rule of ss.cssRules) allCSS += rule.cssText + '\n';
+      } catch (e) { /* cross-origin — skip */ }
+    }
 
-    overlay.innerHTML =
-      '<div style="background:#1a2240;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">'
-      + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.15em;color:rgba(255,255,255,0.45);flex:1">TRAINING PLAN</span>'
-      + '<button onclick="' + printScript + '" style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.1em;background:#C8392B;color:white;border:none;padding:9px 18px;border-radius:3px;cursor:pointer">&#8595; SAVE AS PDF</button>'
-      + '<button onclick="' + closeScript + '" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:9px 13px;border-radius:3px;font-size:14px;cursor:pointer;margin-left:6px">&#10005;</button>'
-      + '</div>'
-      + '<div style="background:rgba(200,57,43,0.07);border-bottom:1px solid rgba(200,57,43,0.18);padding:8px 14px;font-family:system-ui,sans-serif;font-size:12px;color:#C8392B;text-align:center;flex-shrink:0">'
-      + tip
-      + '</div>';
+    const html = '<!DOCTYPE html><html><head>'
+      + '<meta charset="UTF-8">'
+      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">'
+      + '<style>'
+      + allCSS
+      // Override app chrome that would bleed into this blank page
+      + '\nhtml,body{margin:0!important;padding:0!important;background:white!important}'
+      + '\nbody::before,body::after{display:none!important;content:none!important;background:none!important}'
+      // Always show the print view on screen (not just in @media print)
+      + '\n#printView{display:block!important}'
+      + '\n@page{size:A4 portrait;margin:10mm 12mm}'
+      + '\n*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
+      + '</style>'
+      + '</head><body>'
+      + pv.outerHTML
+      // Auto-print once fonts are loaded; short delay lets fonts render first
+      + '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},600);});<\/script>'
+      + '</body></html>';
 
-    document.body.appendChild(overlay);
+    const blob  = new Blob([html], { type: 'text/html; charset=utf-8' });
+    const url   = URL.createObjectURL(blob);
+    const newWin = window.open(url, '_blank');
+    if (!newWin) {
+      // Popup blocker fired (shouldn't happen from onclick, but just in case)
+      alert('Please allow popups for this site and try again.');
+    }
+    pv.remove();
+    // Revoke the object URL after a generous delay (page may still be open)
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
 
   } else {
-    // Chrome on Windows / Mac / Android — standard print dialog
+    // Chrome / Edge / Firefox — direct window.print() is fast and perfect
     window.print();
     setTimeout(() => { if (pv) pv.remove(); }, 2000);
   }
