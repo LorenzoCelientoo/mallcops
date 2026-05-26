@@ -1941,6 +1941,21 @@ function buildWeekPage(weekStart, weekEnd) {
     const inMonth = date.getMonth() === viewMonth && date.getFullYear() === viewYear;
     ws.forEach(w => { weekTotal += parseFloat(w.distance) || 0; });
 
+    // ── Adaptive row height ───────────────────────────────────────────────────
+    // Count lines that would appear in the Details column for this day.
+    // Notes always need ~65px; effort dots always need ~32px; those set the
+    // floor.  Complex workouts also need tall detail cells, so we grow the row.
+    //   Tier 1 (≤1 line)  : wrapH 68 → row 84px  – rest / easy run / cross
+    //   Tier 2 (2–3 lines) : wrapH 73 → row 89px  – tempo / simple long run
+    //   Tier 3 (4+ lines)  : wrapH 78 → row 94px  – intervals / structured
+    // Worst-case (7× tier-3): 7×94 + 103px overhead = 761px < 785px (Safari) ✓
+    let detailLines = 0;
+    ws.forEach(w => {
+      if ((w.distance || w.pace || w.duration) && w.type !== 'rest') detailLines++;
+      detailLines += formatStructureLines(w.structure, w.type).length;
+    });
+    const wrapH = detailLines <= 1 ? 68 : detailLines <= 3 ? 73 : 78;
+
     const row = document.createElement('tr');
     row.className = 'pv-week-row' + (i % 2 === 1 ? ' pv-alt' : '') + (!inMonth ? ' pv-off' : '');
 
@@ -2023,9 +2038,11 @@ function buildWeekPage(weekStart, weekEnd) {
 
     // Wrap every cell's content in a height-capped div.
     // max-height is ignored on <td> per CSS spec; a child div is reliable.
+    // wrapH is the adaptive height computed above from detail-line count.
     row.querySelectorAll('td').forEach(td => {
       const wrap = document.createElement('div');
       wrap.className = 'pv-cell-wrap';
+      wrap.style.height = wrapH + 'px';
       while (td.firstChild) wrap.appendChild(td.firstChild);
       td.appendChild(wrap);
     });

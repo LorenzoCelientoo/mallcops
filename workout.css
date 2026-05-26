@@ -905,7 +905,7 @@
   /* Portrait for all pages — works on Chrome, Safari (macOS + iOS) identically */
   @page { size: A4 portrait; margin: 10mm 12mm; }
   .pv-month-page { page-break-after: always; }
-  .pv-week-page  { page-break-after: always; }
+  .pv-week-page  { page-break-after: always; break-inside: avoid; page-break-inside: avoid; }
   .pv-week-page:last-child { page-break-after: avoid; }
   /* Force entire week table onto one page — prevents Safari splitting mid-table */
   .pv-week-table { break-inside: avoid; page-break-inside: avoid; }
@@ -1016,17 +1016,17 @@
   font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 0.16em;
   padding: 8px 9px; border: 1px solid #1a2240; text-align: left;
 }
-/* Data rows */
+/* Data rows — height is driven by .pv-cell-wrap (set per-row in JS) */
 .pv-week-row td {
   border: 1px solid #ddd; vertical-align: top;
   padding: 8px 9px; font-size: 11px; color: #1a2240;
-  height: 90px; max-height: 90px; overflow: hidden; background: white;
+  overflow: hidden; background: white;
 }
 .pv-week-row.pv-alt td { background: white; }
 .pv-week-row.pv-off td { opacity: 0.3; background: white; }
 
-/* Inner cell wrapper — reliably caps content height (max-height is ignored on td) */
-.pv-cell-wrap { height: 74px; overflow: hidden; }
+/* Inner cell wrapper — height set inline per-row by JS (3 tiers based on detail-line count) */
+.pv-cell-wrap { height: 68px; overflow: hidden; } /* fallback; JS overrides per row */
 
 /* Day cell */
 .pv-wday {
