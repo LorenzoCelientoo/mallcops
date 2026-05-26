@@ -907,7 +907,9 @@
   .pv-month-page { page-break-after: always; }
   .pv-week-page  { page-break-after: always; }
   .pv-week-page:last-child { page-break-after: avoid; }
-  .pv-week-row   { page-break-inside: avoid; }
+  /* Force entire week table onto one page — prevents Safari splitting mid-table */
+  .pv-week-table { break-inside: avoid; page-break-inside: avoid; }
+  .pv-week-row   { break-inside: avoid; page-break-inside: avoid; }
 }
 
 /* ── Shared base ── */
@@ -1019,10 +1021,13 @@
 .pv-week-row td {
   border: 1px solid #ddd; vertical-align: top;
   padding: 8px 9px; font-size: 11px; color: #1a2240;
-  height: 118px; background: white;
+  height: 110px; max-height: 110px; overflow: hidden; background: white;
 }
 .pv-week-row.pv-alt td { background: white; }
 .pv-week-row.pv-off td { opacity: 0.3; background: white; }
+
+/* Inner cell wrapper — reliably caps content height (max-height is ignored on td) */
+.pv-cell-wrap { height: 94px; overflow: hidden; }
 
 /* Day cell */
 .pv-wday {

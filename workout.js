@@ -1729,9 +1729,6 @@ function exportPDF() {
       + '</div>'
       + '<div style="background:rgba(200,57,43,0.07);border-bottom:1px solid rgba(200,57,43,0.18);padding:8px 14px;font-family:system-ui,sans-serif;font-size:12px;color:#C8392B;text-align:center;flex-shrink:0">'
       + tip
-      + '</div>'
-      + '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px">'
-      + pv.innerHTML
       + '</div>';
 
     document.body.appendChild(overlay);
@@ -2006,6 +2003,16 @@ function buildWeekPage(weekStart, weekEnd) {
       tdNotes.appendChild(line);
     }
     row.appendChild(tdNotes);
+
+    // Wrap every cell's content in a height-capped div.
+    // max-height is ignored on <td> per CSS spec; a child div is reliable.
+    row.querySelectorAll('td').forEach(td => {
+      const wrap = document.createElement('div');
+      wrap.className = 'pv-cell-wrap';
+      while (td.firstChild) wrap.appendChild(td.firstChild);
+      td.appendChild(wrap);
+    });
+
     tbody.appendChild(row);
   }
   tbl.appendChild(tbody);
