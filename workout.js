@@ -1693,8 +1693,57 @@ auth.onAuthStateChanged(function(authUser) {
 //  PDF Export  (window.print())
 // ============================================================
 
+// ── PDF layout picker ─────────────────────────────────────────────────────────
 function exportPDF() {
-  buildPrintView();
+  // Show a two-button picker so the user chooses Chrome vs Safari layout
+  // regardless of which browser they're currently on.
+  const existing = document.getElementById('pdf-picker');
+  if (existing) existing.remove();
+
+  const btn = (label, sub, icon, dpi) =>
+    '<button onclick="startPDFExport(' + dpi + ')" style="'
+    + 'font-family:\'Bebas Neue\',sans-serif;background:rgba(255,255,255,0.06);'
+    + 'border:1px solid rgba(255,255,255,0.16);border-radius:8px;padding:18px 10px;'
+    + 'cursor:pointer;color:white;text-align:center;width:100%">'
+    + '<div style="font-size:24px;margin-bottom:7px">' + icon + '</div>'
+    + '<div style="font-size:14px;letter-spacing:0.14em;margin-bottom:4px">' + label + '</div>'
+    + '<div style="font-family:\'Barlow\',sans-serif;font-size:10.5px;'
+    + 'color:rgba(255,255,255,0.45);font-weight:400;line-height:1.4">' + sub + '</div>'
+    + '</button>';
+
+  const picker = document.createElement('div');
+  picker.id = 'pdf-picker';
+  picker.style.cssText = 'position:fixed;inset:0;z-index:99999;'
+    + 'background:rgba(10,16,32,0.75);display:flex;align-items:center;justify-content:center;';
+
+  picker.innerHTML =
+    '<div style="background:#1a2240;border-radius:10px;padding:26px 24px;'
+    + 'width:min(320px,90vw);box-shadow:0 16px 56px rgba(0,0,0,0.55);">'
+    + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;'
+    + 'letter-spacing:0.2em;color:white;margin-bottom:3px">PDF EXPORT</div>'
+    + '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;'
+    + 'color:rgba(255,255,255,0.4);margin-bottom:20px">Choose the layout for your device</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
+    + btn('CHROME', 'Windows &amp; Mac<br>Chrome / Edge', '🖥️', true)
+    + btn('SAFARI', 'iPhone, iPad &amp;<br>Mac Safari', '📱', false)
+    + '</div>'
+    + '<button onclick="document.getElementById(\'pdf-picker\').remove()" style="'
+    + 'width:100%;font-family:\'Bebas Neue\',sans-serif;font-size:11px;letter-spacing:0.14em;'
+    + 'background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:5px;'
+    + 'padding:9px;color:rgba(255,255,255,0.3);cursor:pointer">CANCEL</button>'
+    + '</div>';
+
+  document.body.appendChild(picker);
+}
+
+// Called from inline onclick on picker buttons — must be global.
+// isHighDPI=true → Chrome layout (96 dpi, ~1047px page)
+// isHighDPI=false → Safari layout (72 dpi, ~785px page)
+function startPDFExport(isHighDPI) {
+  const picker = document.getElementById('pdf-picker');
+  if (picker) picker.remove();
+
+  buildPrintView(isHighDPI);
   const pv = document.getElementById('printView');
 
   const ua = navigator.userAgent;
@@ -1702,60 +1751,38 @@ function exportPDF() {
   const isSafari = !isIOS && /Safari/.test(ua) && !/Chrome|Chromium|CriOS|EdgA|Firefox/.test(ua);
 
   if (isIOS || isSafari) {
-    // ── Safari / iOS: open a self-contained print page in a new tab ──────────
-    //
-    // Why not window.print() here?  The old overlay approach (calling
-    // window.print() from an inline onclick on a dynamically created button)
-    // was unreliable on Safari — the gesture context got lost between DOM
-    // manipulation steps.
-    //
-    // New approach: build a complete standalone HTML document with all CSS
-    // inlined, open it via window.open() (allowed from synchronous onclick),
-    // and let IT call window.print() on its own load event.  No overlays,
-    // no timing hacks, no gesture-context juggling.
-
-    // Extract same-origin CSS rules (cross-origin sheets like Google Fonts CDN
-    // throw SecurityError on .cssRules — we catch those and skip).
+    // Safari / iOS: self-contained blob page opened in a new tab.
+    // window.open() is allowed here — we're inside a synchronous onclick.
     let allCSS = '';
     for (const ss of document.styleSheets) {
-      try {
-        for (const rule of ss.cssRules) allCSS += rule.cssText + '\n';
-      } catch (e) { /* cross-origin — skip */ }
+      try { for (const rule of ss.cssRules) allCSS += rule.cssText + '\n'; }
+      catch (e) { /* cross-origin (Google Fonts CDN) — skip */ }
     }
 
     const html = '<!DOCTYPE html><html><head>'
       + '<meta charset="UTF-8">'
       + '<meta name="viewport" content="width=device-width,initial-scale=1">'
       + '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">'
-      + '<style>'
-      + allCSS
-      // Override app chrome that would bleed into this blank page
+      + '<style>' + allCSS
       + '\nhtml,body{margin:0!important;padding:0!important;background:white!important}'
       + '\nbody::before,body::after{display:none!important;content:none!important;background:none!important}'
-      // Always show the print view on screen (not just in @media print)
       + '\n#printView{display:block!important}'
       + '\n@page{size:A4 portrait;margin:10mm 12mm}'
       + '\n*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
-      + '</style>'
-      + '</head><body>'
+      + '</style></head><body>'
       + pv.outerHTML
-      // Auto-print once fonts are loaded; short delay lets fonts render first
       + '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},600);});<\/script>'
       + '</body></html>';
 
-    const blob  = new Blob([html], { type: 'text/html; charset=utf-8' });
-    const url   = URL.createObjectURL(blob);
-    const newWin = window.open(url, '_blank');
-    if (!newWin) {
-      // Popup blocker fired (shouldn't happen from onclick, but just in case)
-      alert('Please allow popups for this site and try again.');
-    }
+    const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const w    = window.open(url, '_blank');
+    if (!w) alert('Please allow popups for this site and try again.');
     pv.remove();
-    // Revoke the object URL after a generous delay (page may still be open)
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 
   } else {
-    // Chrome / Edge / Firefox — direct window.print() is fast and perfect
+    // Chrome / Edge / Firefox — direct print
     window.print();
     setTimeout(() => { if (pv) pv.remove(); }, 2000);
   }
@@ -1807,14 +1834,15 @@ function formatStructureLines(structure, wType) {
 }
 
 // ── Main builder ──────────────────────────────────────────────────────────────
-function buildPrintView() {
-  // Detect print DPI so week pages get the right row heights.
-  // Safari (macOS + iOS) renders print CSS at 72 dpi → ~785px content height.
-  // Chrome / Edge / Firefox use 96 dpi → ~1047px content height.
-  const ua = navigator.userAgent;
-  const isIOS    = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = !isIOS && /Safari/.test(ua) && !/Chrome|Chromium|CriOS|EdgA|Firefox/.test(ua);
-  const isHighDPI = !isIOS && !isSafari;   // Chrome / Edge / Firefox
+function buildPrintView(isHighDPI) {
+  // isHighDPI is passed explicitly from the picker (true = Chrome layout, false = Safari layout).
+  // If somehow called without argument, fall back to UA detection.
+  if (typeof isHighDPI === 'undefined') {
+    const ua = navigator.userAgent;
+    const isIOS    = /iPad|iPhone|iPod/.test(ua);
+    const isSafari = !isIOS && /Safari/.test(ua) && !/Chrome|Chromium|CriOS|EdgA|Firefox/.test(ua);
+    isHighDPI = !isIOS && !isSafari;
+  }
 
   const old = document.getElementById('printView'); if (old) old.remove();
   const pv = document.createElement('div'); pv.id = 'printView';
