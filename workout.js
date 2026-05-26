@@ -1879,20 +1879,27 @@ function buildMonthPage(isHighDPI = false) {
   const numRows = Math.ceil((_off + _last) / 7);  // 4, 5 or 6
 
   // ── Race hero (shown only when a race name is set) ─────────────────────────
-  // Font size is adaptive: smaller for 6-row months (less vertical room),
-  // larger for Chrome (96 dpi, more page height).
-  //
-  //            Safari (72 dpi, ~785px)    Chrome (96 dpi, ~1047px)
-  //  4 rows        86px                      116px
-  //  5 rows        76px                      108px
-  //  6 rows        36px                       48px
-  //
   const raceName = (document.getElementById('raceNameInput').value || '').trim().toUpperCase();
   if (raceName) {
     const compact = numRows >= 6;
-    const nameFontSize = isHighDPI
-      ? (numRows <= 4 ? 116 : compact ? 48 : 108)
-      : (numRows <= 4 ?  86 : compact ? 36 :  76);
+
+    // ── Font size: always fits on exactly one line ────────────────────────────
+    // Bebas Neue uppercase avg char width ≈ 0.60 × font-size (conservative).
+    // CSS content width for A4 with 12mm side margins ≈ 676px.
+    // We also cap by the available vertical gap so the hero never overflows the page.
+    //
+    // Width constraint  → fontByWidth  = floor(676 / (chars × 0.60))
+    // Height constraint → fontByHeight = floor((heroMaxH - overhead) / 0.92)
+    //   overhead ≈ 46px (padding + label + date + margin/border)
+    //
+    const pageH      = isHighDPI ? 1047 : 785;
+    const hdrH       = isHighDPI ?   57 :  44;
+    const theadH     = isHighDPI ?   44 :  34;
+    const calRowH    = isHighDPI ?  145 : 108;
+    const heroMaxH   = Math.max(48, pageH - hdrH - theadH - numRows * calRowH - 14);
+    const fontByWidth  = Math.floor(676 / (raceName.length * 0.60));
+    const fontByHeight = Math.floor((heroMaxH - 46) / 0.92);
+    const nameFontSize = Math.min(fontByWidth, fontByHeight);
 
     const raceDate = document.getElementById('raceDateInput').value;
     let   dateLine = '';
@@ -1903,20 +1910,8 @@ function buildMonthPage(isHighDPI = false) {
         + '</div>';
     }
 
-    // Compute available vertical space for the hero so it never overflows.
-    // page height − month-header − cal-thead − (rows × row-height) − small buffer
-    //   Safari: 785px page, 44px hdr, 34px thead, 108px/row
-    //   Chrome: 1047px page, 57px hdr, 44px thead, 145px/row
-    const pageH     = isHighDPI ? 1047 : 785;
-    const hdrH      = isHighDPI ?   57 :  44;
-    const theadH    = isHighDPI ?   44 :  34;
-    const calRowH   = isHighDPI ?  145 : 108;
-    const heroMaxH  = Math.max(40, pageH - hdrH - theadH - numRows * calRowH - 14);
-
     const hero = document.createElement('div');
     hero.className = 'pv-race-hero' + (compact ? ' pv-race-hero-compact' : '');
-    hero.style.maxHeight = heroMaxH + 'px';
-    hero.style.overflow  = 'hidden';
     hero.innerHTML = (compact ? '' : '<div class="pv-race-pre">PREPARING FOR</div>')
       + '<div class="pv-race-name" style="font-size:' + nameFontSize + 'px;line-height:0.92">'
       + raceName + '</div>'
