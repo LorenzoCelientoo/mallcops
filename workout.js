@@ -1,4 +1,4 @@
-// ── Firebase ───────────────────────────────────────────────────────────────
+﻿// ── Firebase ───────────────────────────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey: "AIzaSyDw8mLJ6MhSSgyFJaW1tGvpn0bi7P9DtOk",
@@ -1864,6 +1864,7 @@ function buildPrintView(isHighDPI) {
     pv.appendChild(buildWeekPage(new Date(ws), new Date(we), isHighDPI));
     ws.setDate(ws.getDate() + 7);
   }
+  pv.appendChild(buildStatsPage(isHighDPI));
   document.body.appendChild(pv);
 }
 
@@ -1995,6 +1996,7 @@ function buildMonthPage(isHighDPI = false) {
 }
 
 // ── Week page (portrait) ──────────────────────────────────────────────────────
+
 function buildWeekPage(weekStart, weekEnd, isHighDPI = false) {
   const page = document.createElement('div'); page.className = 'pv-page pv-week-page';
 
@@ -2167,5 +2169,103 @@ function buildWeekPage(weekStart, weekEnd, isHighDPI = false) {
   }
 
   page.appendChild(tbl);
+  return page;
+}
+
+// ── Stats page (last page of PDF) ────────────────────────────────────────────
+function buildStatsPage(isHighDPI = false) {
+  const page = document.createElement('div');
+  page.className = 'pv-page pv-stats-page';
+
+  // Header
+  const hdr = document.createElement('div'); hdr.className = 'pv-hdr';
+  const athleteName = (viewingAs || currentUser).toUpperCase();
+  const coachLabel  = (isCoach && viewingAs !== currentUser) ? currentUser : myCoachName;
+  hdr.innerHTML = '<div class="pv-hdr-left">'
+    + '<span class="pv-hdr-title">' + MONTHS[viewMonth].toUpperCase()
+    + ' <span class="pv-hdr-year">' + viewYear + '</span></span>'
+    + '<span class="pv-hdr-sep"> &middot; </span>'
+    + '<span class="pv-hdr-athlete">' + athleteName + '</span>'
+    + (coachLabel ? '<span class="pv-hdr-sep"> &middot; </span><span class="pv-hdr-coach">Coach: ' + coachLabel + '</span>' : '')
+    + '</div>'
+    + '<div class="pv-hdr-right"><span class="pv-hdr-logo">MALLCOPS</span>'
+    + '<div class="pv-hdr-sub">Intensity Statistics</div></div>';
+  page.appendChild(hdr);
+
+  // Helper: sum easy/hard/total for a list of dateKeys
+  const calcSplit = keys => {
+    let totalMi = 0, easyMi = 0, hardMi = 0;
+    keys.forEach(key => {
+      (workouts[key] || []).forEach(w => {
+        const dist = parseFloat(w.distance) || 0;
+        totalMi += dist;
+        if (w.type === 'rest') return;
+        if (w.easyMiles != null || w.hardMiles != null) {
+          easyMi += parseFloat(w.easyMiles) || 0;
+          hardMi += parseFloat(w.hardMiles) || 0;
+        } else {
+          const isHard = w.type === 'tempo' || w.type === 'intervals' || w.type === 'race';
+          if (isHard) hardMi += dist; else easyMi += dist;
+        }
+      });
+    });
+    return { totalMi, easyMi, hardMi };
+  };
+
+  // Helper: build one intensity-split row
+  const fmtD = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  const buildRow = (label, sublabel, data, large) => {
+    const { totalMi, easyMi, hardMi } = data;
+    const splitTotal = easyMi + hardMi;
+    const ePct = splitTotal > 0 ? (easyMi / splitTotal * 100) : 0;
+    const hPct = splitTotal > 0 ? (hardMi / splitTotal * 100) : 0;
+    const row = document.createElement('div');
+    row.className = 'pvs-row' + (large ? ' pvs-row-large' : '');
+    row.innerHTML =
+      '<div class="pvs-row-head">'
+      +   '<span class="pvs-label">' + label + '</span>'
+      +   (sublabel ? '<span class="pvs-sublabel">&nbsp;&nbsp;' + sublabel + '</span>' : '')
+      +   '<span class="pvs-total">' + totalMi.toFixed(1) + ' mi</span>'
+      + '</div>'
+      + '<div class="pvs-bar">'
+      +   '<div class="pvs-bar-easy" style="width:' + ePct.toFixed(2) + '%"></div>'
+      +   '<div class="pvs-bar-hard" style="width:' + hPct.toFixed(2) + '%"></div>'
+      + '</div>'
+      + '<div class="pvs-legend">'
+      +   '<span class="pvs-leg-easy">Easy ' + easyMi.toFixed(1) + ' mi (' + Math.round(ePct) + '%)</span>'
+      +   '<span class="pvs-leg-hard">Hard ' + hardMi.toFixed(1) + ' mi (' + Math.round(hPct) + '%)</span>'
+      + '</div>';
+    return row;
+  };
+
+  // Month total
+  const y = viewYear, m = viewMonth;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const monthKeys = [];
+  for (let d = 1; d <= lastDay; d++) monthKeys.push(dateKey(y, m, d));
+  page.appendChild(buildRow(MONTHS[m].toUpperCase() + ' ' + y, '', calcSplit(monthKeys), true));
+
+  const divider = document.createElement('div'); divider.className = 'pvs-divider';
+  page.appendChild(divider);
+
+  // Weekly rows
+  let weekStart = getMonday(new Date(y, m, 1));
+  const monthEnd = new Date(y, m + 1, 0);
+  let weekNum = 1;
+  while (weekStart <= monthEnd) {
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekKeys = [];
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(weekStart); day.setDate(day.getDate() + d);
+      weekKeys.push(dateKey(day.getFullYear(), day.getMonth(), day.getDate()));
+    }
+    const wData = calcSplit(weekKeys);
+    if (wData.totalMi > 0) {
+      page.appendChild(buildRow('WEEK ' + weekNum, fmtD(weekStart) + ' – ' + fmtD(weekEnd), wData, false));
+    }
+    weekStart.setDate(weekStart.getDate() + 7);
+    weekNum++;
+  }
+
   return page;
 }
