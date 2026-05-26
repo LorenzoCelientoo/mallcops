@@ -1079,10 +1079,12 @@
   font-size: 9px; color: rgba(26,34,64,0.55);
 }
 
-/* Week footer */
-.pv-week-footer {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-top: 8px;
+/* Week total — lives in <tfoot> so it's inside the table's break-inside:avoid block */
+.pv-week-tfoot-td {
+  border: none;
+  border-top: 1px solid #ddd;
+  padding: 5px 9px;
+  background: white;
 }
 .pv-week-total {
   font-family: 'Bebas Neue', sans-serif; font-size: 13px;

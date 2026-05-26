@@ -2033,13 +2033,24 @@ function buildWeekPage(weekStart, weekEnd) {
     tbody.appendChild(row);
   }
   tbl.appendChild(tbody);
-  page.appendChild(tbl);
 
+  // Week total lives in <tfoot> so it's part of the table's atomic print block.
+  // A separate <div> after the table can split onto the next page even with
+  // break-inside:avoid on the table — tfoot is protected by the same rule.
   if (weekTotal > 0) {
-    const foot = document.createElement('div'); foot.className = 'pv-week-footer';
-    const tot  = document.createElement('div'); tot.className  = 'pv-week-total';
+    const tfoot = document.createElement('tfoot');
+    const frow  = document.createElement('tr');
+    const ftd   = document.createElement('td');
+    ftd.colSpan = 5;  // 5 columns: day/date · type · details · effort · notes
+    ftd.className = 'pv-week-tfoot-td';
+    const tot = document.createElement('div'); tot.className = 'pv-week-total';
     tot.textContent = 'Week Total: ' + weekTotal.toFixed(1) + ' mi';
-    foot.appendChild(tot); page.appendChild(foot);
+    ftd.appendChild(tot);
+    frow.appendChild(ftd);
+    tfoot.appendChild(frow);
+    tbl.appendChild(tfoot);
   }
+
+  page.appendChild(tbl);
   return page;
 }
