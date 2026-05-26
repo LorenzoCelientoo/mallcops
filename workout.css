@@ -1152,74 +1152,65 @@
 }
 
 /* ── PDF Stats page ──────────────────────────────────────────────────────────
-   One intensity-split row per block (month + each week).
-   Safari (72 dpi) base sizes; .pv-hires overrides for Chrome below.
+   Sections: month (large) + weekly rows. Each section has:
+     header label → row of 5 KPI boxes → intensity split bar + legend
    ──────────────────────────────────────────────────────────────────────────── */
 
-/* Month-level row — larger treatment */
-.pvs-row-large {
-  padding: 14px 0 12px;
-  border-bottom: 2px solid rgba(26,34,64,0.12);
-  margin-bottom: 4px;
-}
-.pvs-row-large .pvs-label {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 26px; letter-spacing: 0.14em; color: #1a2240; line-height: 1;
-}
-.pvs-row-large .pvs-bar  { height: 22px; margin-bottom: 6px; }
-.pvs-row-large .pvs-leg-easy,
-.pvs-row-large .pvs-leg-hard { font-size: 11px; font-weight: 500; }
+/* Section wrapper */
+.pvs-section       { padding: 8px 0 6px; border-bottom: 1px solid rgba(26,34,64,0.08); }
+.pvs-section-large { padding: 10px 0 8px; border-bottom: 2px solid rgba(26,34,64,0.14); margin-bottom: 2px; }
+.pvs-divider       { border-top: 1px solid rgba(26,34,64,0.18); margin: 8px 0 4px; }
 
-/* Weekly rows */
-.pvs-row {
-  padding: 10px 0 8px;
-  border-bottom: 1px solid rgba(26,34,64,0.08);
-}
-.pvs-row-head {
-  display: flex; align-items: baseline; margin-bottom: 6px;
-}
-.pvs-label {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 16px; letter-spacing: 0.12em; color: #1a2240; line-height: 1;
-}
-.pvs-sublabel {
-  font-family: 'Barlow', sans-serif;
-  font-size: 9.5px; color: rgba(26,34,64,0.4); font-weight: 400;
-}
-.pvs-total {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 13px; letter-spacing: 0.08em;
-  color: rgba(26,34,64,0.35); margin-left: auto;
-}
-.pvs-bar {
-  height: 13px; display: flex; border-radius: 2px; overflow: hidden;
-  margin-bottom: 4px; background: rgba(26,34,64,0.06);
-}
-.pvs-bar-easy { background: #2E7D5B; }
-.pvs-bar-hard { background: #C8392B; }
-.pvs-legend { display: flex; justify-content: space-between; }
-.pvs-leg-easy {
-  font-family: 'Barlow', sans-serif;
-  font-size: 9px; color: #2E7D5B; font-weight: 500;
-}
-.pvs-leg-hard {
-  font-family: 'Barlow', sans-serif;
-  font-size: 9px; color: #C8392B; font-weight: 500;
-}
-.pvs-divider {
-  border-top: 1px solid rgba(26,34,64,0.18); margin: 10px 0 6px;
-}
+/* Section heading */
+.pvs-sec-head  { margin-bottom: 6px; display: flex; align-items: baseline; }
+.pvs-label     { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.12em; color: #1a2240; }
+.pvs-sublabel  { font-family: 'Barlow', sans-serif; font-size: 9px; color: rgba(26,34,64,0.4); }
+.pvs-section-large .pvs-label { font-size: 22px; }
+.pvs-section-large .pvs-sublabel { font-size: 11px; }
+
+/* KPI boxes row */
+.pvs-kpi-row       { display: flex; gap: 6px; margin-bottom: 7px; }
+.pvs-kpi-box       { flex: 1; background: #ede5d0; border-radius: 3px; padding: 7px 4px 5px; text-align: center; }
+.pvs-kpi-val       { font-family: 'Bebas Neue', sans-serif; font-size: 20px; line-height: 1; }
+.pvs-kpi-frac      { font-size: 13px; color: rgba(26,34,64,0.4); }
+.pvs-kpi-lbl       { font-family: 'Barlow', sans-serif; font-size: 7.5px; letter-spacing: 0.14em; color: rgba(26,34,64,0.45); margin-top: 3px; }
+
+/* Large (month) KPI boxes */
+.pvs-kpi-row-large .pvs-kpi-box { padding: 10px 4px 7px; }
+.pvs-kpi-row-large .pvs-kpi-val { font-size: 28px; }
+.pvs-kpi-row-large .pvs-kpi-frac { font-size: 17px; }
+.pvs-kpi-row-large .pvs-kpi-lbl { font-size: 9px; margin-top: 4px; }
+
+/* Intensity bar */
+.pvs-bar-wrap  { }
+.pvs-bar       { height: 11px; display: flex; border-radius: 2px; overflow: hidden; margin-bottom: 4px; background: rgba(26,34,64,0.06); }
+.pvs-bar-easy  { background: #2E7D5B; }
+.pvs-bar-hard  { background: #C8392B; }
+.pvs-legend    { display: flex; justify-content: space-between; }
+.pvs-leg-easy  { font-family: 'Barlow', sans-serif; font-size: 8.5px; color: #2E7D5B; font-weight: 500; }
+.pvs-leg-hard  { font-family: 'Barlow', sans-serif; font-size: 8.5px; color: #C8392B; font-weight: 500; }
+
+.pvs-section-large .pvs-bar  { height: 16px; margin-bottom: 5px; }
+.pvs-section-large .pvs-leg-easy,
+.pvs-section-large .pvs-leg-hard { font-size: 10.5px; }
 
 /* Chrome (hires) overrides */
-#printView.pv-hires .pvs-row-large .pvs-label   { font-size: 34px; }
-#printView.pv-hires .pvs-row-large .pvs-bar      { height: 28px; margin-bottom: 8px; }
-#printView.pv-hires .pvs-row-large .pvs-leg-easy,
-#printView.pv-hires .pvs-row-large .pvs-leg-hard { font-size: 13px; }
-#printView.pv-hires .pvs-row-large               { padding: 18px 0 16px; }
-#printView.pv-hires .pvs-label                   { font-size: 20px; }
-#printView.pv-hires .pvs-sublabel                { font-size: 11px; }
-#printView.pv-hires .pvs-total                   { font-size: 16px; }
-#printView.pv-hires .pvs-bar                     { height: 17px; margin-bottom: 6px; }
+#printView.pv-hires .pvs-label                        { font-size: 19px; }
+#printView.pv-hires .pvs-sublabel                     { font-size: 11px; }
+#printView.pv-hires .pvs-section-large .pvs-label     { font-size: 28px; }
+#printView.pv-hires .pvs-kpi-val                      { font-size: 26px; }
+#printView.pv-hires .pvs-kpi-frac                     { font-size: 17px; }
+#printView.pv-hires .pvs-kpi-lbl                      { font-size: 9px; }
+#printView.pv-hires .pvs-kpi-box                      { padding: 9px 4px 7px; }
+#printView.pv-hires .pvs-kpi-row-large .pvs-kpi-val   { font-size: 36px; }
+#printView.pv-hires .pvs-kpi-row-large .pvs-kpi-frac  { font-size: 22px; }
+#printView.pv-hires .pvs-kpi-row-large .pvs-kpi-lbl   { font-size: 11px; }
+#printView.pv-hires .pvs-kpi-row-large .pvs-kpi-box   { padding: 13px 4px 10px; }
+#printView.pv-hires .pvs-bar                          { height: 14px; margin-bottom: 5px; }
+#printView.pv-hires .pvs-section-large .pvs-bar       { height: 20px; margin-bottom: 7px; }
 #printView.pv-hires .pvs-leg-easy,
-#printView.pv-hires .pvs-leg-hard                { font-size: 11px; }
-#printView.pv-hires .pvs-row                     { padding: 13px 0 11px; }
+#printView.pv-hires .pvs-leg-hard                     { font-size: 11px; }
+#printView.pv-hires .pvs-section-large .pvs-leg-easy,
+#printView.pv-hires .pvs-section-large .pvs-leg-hard  { font-size: 13px; }
+#printView.pv-hires .pvs-section                      { padding: 11px 0 9px; }
+#printView.pv-hires .pvs-section-large                { padding: 14px 0 11px; }

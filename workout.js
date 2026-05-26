@@ -2192,9 +2192,11 @@ function buildStatsPage(isHighDPI = false) {
     + '<div class="pv-hdr-sub">Intensity Statistics</div></div>';
   page.appendChild(hdr);
 
-  // Helper: sum easy/hard/total for a list of dateKeys
+  // ── Helper: aggregate stats for a list of dateKeys ───────────────────────
   const calcSplit = keys => {
     let totalMi = 0, easyMi = 0, hardMi = 0;
+    let completedCount = 0, totalCount = 0;
+    let effortSum = 0, effortCount = 0;
     keys.forEach(key => {
       (workouts[key] || []).forEach(w => {
         const dist = parseFloat(w.distance) || 0;
@@ -2207,48 +2209,81 @@ function buildStatsPage(isHighDPI = false) {
           const isHard = w.type === 'tempo' || w.type === 'intervals' || w.type === 'race';
           if (isHard) hardMi += dist; else easyMi += dist;
         }
+        totalCount++;
+        if (w.completed) completedCount++;
+        if (w.effort != null) { effortSum += parseFloat(w.effort); effortCount++; }
       });
     });
-    return { totalMi, easyMi, hardMi };
+    return {
+      totalMi, easyMi, hardMi,
+      completedCount, totalCount,
+      avgEffort: effortCount > 0 ? effortSum / effortCount : null
+    };
   };
 
-  // Helper: build one intensity-split row
-  const fmtD = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
-  const buildRow = (label, sublabel, data, large) => {
-    const { totalMi, easyMi, hardMi } = data;
+  // ── Helper: build a row of 5 KPI boxes ──────────────────────────────────
+  const buildKpiRow = ({ totalMi, easyMi, hardMi, completedCount, totalCount, avgEffort }, large) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'pvs-kpi-row' + (large ? ' pvs-kpi-row-large' : '');
+
+    const kpi = (val, sub, color) => {
+      const box = document.createElement('div'); box.className = 'pvs-kpi-box';
+      box.innerHTML = '<div class="pvs-kpi-val" style="color:' + color + '">' + val + '</div>'
+        + '<div class="pvs-kpi-lbl">' + sub + '</div>';
+      wrap.appendChild(box);
+    };
+
+    kpi(totalMi.toFixed(1), 'TOTAL MI', '#1a2240');
+    kpi(hardMi.toFixed(1),  'HARD MI',  '#C8392B');
+    kpi(easyMi.toFixed(1),  'EASY MI',  '#2E7D5B');
+    kpi(completedCount + '<span class="pvs-kpi-frac">/' + totalCount + '</span>', 'DONE', '#1a2240');
+    kpi(avgEffort != null ? avgEffort.toFixed(1) : '—', 'AVG RPE', '#1a2240');
+    return wrap;
+  };
+
+  // ── Helper: intensity bar + legend ──────────────────────────────────────
+  const buildBar = ({ easyMi, hardMi }) => {
     const splitTotal = easyMi + hardMi;
     const ePct = splitTotal > 0 ? (easyMi / splitTotal * 100) : 0;
     const hPct = splitTotal > 0 ? (hardMi / splitTotal * 100) : 0;
-    const row = document.createElement('div');
-    row.className = 'pvs-row' + (large ? ' pvs-row-large' : '');
-    row.innerHTML =
-      '<div class="pvs-row-head">'
-      +   '<span class="pvs-label">' + label + '</span>'
-      +   (sublabel ? '<span class="pvs-sublabel">&nbsp;&nbsp;' + sublabel + '</span>' : '')
-      +   '<span class="pvs-total">' + totalMi.toFixed(1) + ' mi</span>'
-      + '</div>'
-      + '<div class="pvs-bar">'
-      +   '<div class="pvs-bar-easy" style="width:' + ePct.toFixed(2) + '%"></div>'
-      +   '<div class="pvs-bar-hard" style="width:' + hPct.toFixed(2) + '%"></div>'
+    const wrap = document.createElement('div'); wrap.className = 'pvs-bar-wrap';
+    wrap.innerHTML =
+      '<div class="pvs-bar">'
+      + '<div class="pvs-bar-easy" style="width:' + ePct.toFixed(2) + '%"></div>'
+      + '<div class="pvs-bar-hard" style="width:' + hPct.toFixed(2) + '%"></div>'
       + '</div>'
       + '<div class="pvs-legend">'
-      +   '<span class="pvs-leg-easy">Easy ' + easyMi.toFixed(1) + ' mi (' + Math.round(ePct) + '%)</span>'
-      +   '<span class="pvs-leg-hard">Hard ' + hardMi.toFixed(1) + ' mi (' + Math.round(hPct) + '%)</span>'
+      + '<span class="pvs-leg-easy">Easy ' + easyMi.toFixed(1) + ' mi (' + Math.round(ePct) + '%)</span>'
+      + '<span class="pvs-leg-hard">Hard ' + hardMi.toFixed(1) + ' mi (' + Math.round(hPct) + '%)</span>'
       + '</div>';
-    return row;
+    return wrap;
   };
 
-  // Month total
+  // ── Helper: full section (label row + kpis + bar) ───────────────────────
+  const fmtD = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  const buildSection = (label, sublabel, data, large) => {
+    const sec = document.createElement('div');
+    sec.className = 'pvs-section' + (large ? ' pvs-section-large' : '');
+    sec.innerHTML = '<div class="pvs-sec-head">'
+      + '<span class="pvs-label">' + label + '</span>'
+      + (sublabel ? '<span class="pvs-sublabel">&nbsp;&nbsp;' + sublabel + '</span>' : '')
+      + '</div>';
+    sec.appendChild(buildKpiRow(data, large));
+    sec.appendChild(buildBar(data));
+    return sec;
+  };
+
+  // ── Month total ──────────────────────────────────────────────────────────
   const y = viewYear, m = viewMonth;
   const lastDay = new Date(y, m + 1, 0).getDate();
   const monthKeys = [];
   for (let d = 1; d <= lastDay; d++) monthKeys.push(dateKey(y, m, d));
-  page.appendChild(buildRow(MONTHS[m].toUpperCase() + ' ' + y, '', calcSplit(monthKeys), true));
+  page.appendChild(buildSection(MONTHS[m].toUpperCase() + ' ' + y, '', calcSplit(monthKeys), true));
 
   const divider = document.createElement('div'); divider.className = 'pvs-divider';
   page.appendChild(divider);
 
-  // Weekly rows
+  // ── Weekly sections ──────────────────────────────────────────────────────
   let weekStart = getMonday(new Date(y, m, 1));
   const monthEnd = new Date(y, m + 1, 0);
   let weekNum = 1;
@@ -2261,7 +2296,7 @@ function buildStatsPage(isHighDPI = false) {
     }
     const wData = calcSplit(weekKeys);
     if (wData.totalMi > 0) {
-      page.appendChild(buildRow('WEEK ' + weekNum, fmtD(weekStart) + ' – ' + fmtD(weekEnd), wData, false));
+      page.appendChild(buildSection('WEEK ' + weekNum, fmtD(weekStart) + ' – ' + fmtD(weekEnd), wData, false));
     }
     weekStart.setDate(weekStart.getDate() + 7);
     weekNum++;
