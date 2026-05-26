@@ -1696,46 +1696,40 @@ auth.onAuthStateChanged(function(authUser) {
 function exportPDF() {
   buildPrintView();
   const pv = document.getElementById('printView');
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-  if (isIOS) {
-    // iOS blocks window.open() and requires window.print() from a direct user tap.
-    // Show a full-screen overlay; the SAVE button gives a fresh gesture to call print().
-    // @media print still hides everything except #printView (which stays in the DOM behind the overlay).
+  const ua = navigator.userAgent;
+  const isIOS       = /iPad|iPhone|iPod/.test(ua);
+  const isMacSafari = !isIOS && /Safari/.test(ua) && !/Chrome/.test(ua) && !/Chromium/.test(ua) && !/CriOS/.test(ua);
+  const needsOverlay = isIOS || isMacSafari;
+
+  if (needsOverlay) {
+    const tip = isIOS
+      ? 'Tap <strong>SAVE AS PDF</strong> &rarr; Print &rarr; Share &rarr; Save to Files'
+      : 'Click <strong>SAVE AS PDF</strong> &rarr; in the print dialog choose <strong>Save as PDF</strong>';
+
     const overlay = document.createElement('div');
     overlay.id = 'pdf-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:white;display:flex;flex-direction:column;';
-
     overlay.innerHTML =
       '<div style="background:#1a2240;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">'
       + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.15em;color:rgba(255,255,255,0.45);flex:1">TRAINING PLAN</span>'
-      + '<button id="pvPrintBtn" style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.1em;background:#C8392B;color:white;border:none;padding:9px 18px;border-radius:3px;cursor:pointer">⬇ SAVE AS PDF</button>'
-      + '<button id="pvCloseBtn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:9px 13px;border-radius:3px;font-size:14px;cursor:pointer;margin-left:6px">✕</button>'
+      + '<button id="pvPrintBtn" style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.1em;background:#C8392B;color:white;border:none;padding:9px 18px;border-radius:3px;cursor:pointer">&#8595; SAVE AS PDF</button>'
+      + '<button id="pvCloseBtn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:9px 13px;border-radius:3px;font-size:14px;cursor:pointer;margin-left:6px">&#10005;</button>'
       + '</div>'
       + '<div style="background:rgba(200,57,43,0.07);border-bottom:1px solid rgba(200,57,43,0.18);padding:8px 14px;font-family:system-ui,sans-serif;font-size:12px;color:#C8392B;text-align:center;flex-shrink:0">'
-      + 'Tap <strong>SAVE AS PDF</strong> → Print → then Share → Save to Files'
+      + tip
       + '</div>'
       + '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px">'
       + pv.innerHTML
       + '</div>';
 
     document.body.appendChild(overlay);
-
-    document.getElementById('pvPrintBtn').addEventListener('click', function() {
-      window.print();
-    });
-    document.getElementById('pvCloseBtn').addEventListener('click', function() {
-      overlay.remove();
-      if (pv) pv.remove();
-    });
-    window.addEventListener('afterprint', function h() {
-      overlay.remove();
-      if (pv) pv.remove();
-      window.removeEventListener('afterprint', h);
-    });
+    document.getElementById('pvPrintBtn').addEventListener('click', function() { window.print(); });
+    document.getElementById('pvCloseBtn').addEventListener('click', function() { overlay.remove(); if (pv) pv.remove(); });
+    window.addEventListener('afterprint', function h() { overlay.remove(); if (pv) pv.remove(); window.removeEventListener('afterprint', h); });
 
   } else {
-    // Desktop / Android Chrome: standard print-to-PDF dialog
+    // Chrome on Windows / Mac / Android — standard print dialog
     window.print();
     setTimeout(() => { if (pv) pv.remove(); }, 2000);
   }
