@@ -1808,8 +1808,18 @@ function formatStructureLines(structure, wType) {
 
 // ── Main builder ──────────────────────────────────────────────────────────────
 function buildPrintView() {
+  // Detect print DPI so week pages get the right row heights.
+  // Safari (macOS + iOS) renders print CSS at 72 dpi → ~785px content height.
+  // Chrome / Edge / Firefox use 96 dpi → ~1047px content height.
+  const ua = navigator.userAgent;
+  const isIOS    = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = !isIOS && /Safari/.test(ua) && !/Chrome|Chromium|CriOS|EdgA|Firefox/.test(ua);
+  const isHighDPI = !isIOS && !isSafari;   // Chrome / Edge / Firefox
+
   const old = document.getElementById('printView'); if (old) old.remove();
   const pv = document.createElement('div'); pv.id = 'printView';
+  if (isHighDPI) pv.classList.add('pv-hires');  // triggers larger CSS overrides
+
   pv.appendChild(buildMonthPage());
   const monthStart = new Date(viewYear, viewMonth, 1);
   const monthEnd   = new Date(viewYear, viewMonth + 1, 0);
@@ -1818,7 +1828,7 @@ function buildPrintView() {
   ws.setDate(ws.getDate() - dOff);
   while (ws <= monthEnd) {
     const we = new Date(ws); we.setDate(we.getDate() + 6);
-    pv.appendChild(buildWeekPage(new Date(ws), new Date(we)));
+    pv.appendChild(buildWeekPage(new Date(ws), new Date(we), isHighDPI));
     ws.setDate(ws.getDate() + 7);
   }
   document.body.appendChild(pv);
@@ -1905,7 +1915,7 @@ function buildMonthPage() {
 }
 
 // ── Week page (portrait) ──────────────────────────────────────────────────────
-function buildWeekPage(weekStart, weekEnd) {
+function buildWeekPage(weekStart, weekEnd, isHighDPI = false) {
   const page = document.createElement('div'); page.className = 'pv-page pv-week-page';
 
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -1943,18 +1953,26 @@ function buildWeekPage(weekStart, weekEnd) {
 
     // ── Adaptive row height ───────────────────────────────────────────────────
     // Count lines that would appear in the Details column for this day.
-    // Notes always need ~65px; effort dots always need ~32px; those set the
-    // floor.  Complex workouts also need tall detail cells, so we grow the row.
-    //   Tier 1 (≤1 line)  : wrapH 68 → row 84px  – rest / easy run / cross
-    //   Tier 2 (2–3 lines) : wrapH 73 → row 89px  – tempo / simple long run
-    //   Tier 3 (4+ lines)  : wrapH 78 → row 94px  – intervals / structured
-    // Worst-case (7× tier-3): 7×94 + 103px overhead = 761px < 785px (Safari) ✓
+    // Two independent tier tables — Safari (72 dpi, ~785px page) vs
+    // Chrome/Edge (96 dpi, ~1047px page).
+    //
+    //  Safari tiers   wrapH → row    Chrome tiers   wrapH → row
+    //  ≤1 line         68  →  84px   ≤1 line         92  → 108px
+    //  2–3 lines       73  →  89px   2–3 lines       107 → 123px
+    //  4+ lines        78  →  94px   4+ lines        117 → 133px
+    //
+    //  Safari  worst-case: 7×94  + 103 = 761px < 785px ✓
+    //  Chrome  worst-case: 7×133 + 103 = 1034px < 1047px ✓
     let detailLines = 0;
     ws.forEach(w => {
       if ((w.distance || w.pace || w.duration) && w.type !== 'rest') detailLines++;
       detailLines += formatStructureLines(w.structure, w.type).length;
     });
-    const wrapH = detailLines <= 1 ? 68 : detailLines <= 3 ? 73 : 78;
+    const wrapH = isHighDPI
+      ? (detailLines <= 1 ? 92 : detailLines <= 3 ? 107 : 117)
+      : (detailLines <= 1 ? 68 : detailLines <= 3 ?  73 :  78);
+    // Chrome gets more note lines because there's room for them
+    const noteLineCount = isHighDPI ? (wrapH >= 107 ? 5 : 4) : 3;
 
     const row = document.createElement('tr');
     row.className = 'pv-week-row' + (i % 2 === 1 ? ' pv-alt' : '') + (!inMonth ? ' pv-off' : '');
@@ -2029,7 +2047,7 @@ function buildWeekPage(weekStart, weekEnd) {
     const noteLbl  = document.createElement('span'); noteLbl.className = 'pv-notes-lbl'; noteLbl.textContent = 'Notes:';
     tdNotes.appendChild(noteLbl);
     const noteText = ws.length && ws[0].notes ? ws[0].notes : '';
-    for (let n = 0; n < 3; n++) {
+    for (let n = 0; n < noteLineCount; n++) {
       const line = document.createElement('div'); line.className = 'pv-note-line';
       if (n === 0 && noteText) line.textContent = noteText;
       tdNotes.appendChild(line);

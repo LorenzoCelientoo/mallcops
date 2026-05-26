@@ -1079,6 +1079,28 @@
   font-size: 9px; color: rgba(26,34,64,0.55);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   HIGH-DPI OVERRIDES — Chrome / Edge / Firefox (96 dpi, ~1047px page height)
+   Applied when JS adds .pv-hires to #printView (Safari gets none of this).
+   Week cell heights are set inline by JS; only static sizes live here.
+   ══════════════════════════════════════════════════════════════════════════ */
+#printView.pv-hires .pv-cal-table td    { height: 145px; }
+#printView.pv-hires .pv-hdr-title       { font-size: 30px; }
+#printView.pv-hires .pv-hdr-sub         { font-size: 12px; }
+#printView.pv-hires .pv-wday            { font-size: 17px; }
+#printView.pv-hires .pv-wdate           { font-size: 11px; margin-top: 3px; }
+#printView.pv-hires .pv-type-badge      { font-size: 12px; padding: 3px 8px; }
+#printView.pv-hires .pv-det-row         { font-size: 10.5px; line-height: 1.45; }
+#printView.pv-hires .pv-det-lbl         { font-size: 10.5px; }
+#printView.pv-hires .pv-det-simple      { font-size: 10.5px; }
+#printView.pv-hires .pv-note-line       { height: 18px; margin-bottom: 4px; }
+#printView.pv-hires .pv-notes-lbl       { font-size: 10px; margin-bottom: 5px; }
+#printView.pv-hires .pv-edot            { width: 15px; height: 15px; font-size: 8px; }
+#printView.pv-hires .pv-effort-dots     { grid-template-columns: repeat(5, 15px); gap: 3px; }
+#printView.pv-hires .pv-week-table thead th { padding: 10px 9px; font-size: 12px; }
+#printView.pv-hires .pv-week-tfoot-td   { padding: 7px 9px; }
+#printView.pv-hires .pv-week-total      { font-size: 14px; }
+
 /* Week total — lives in <tfoot> so it's inside the table's break-inside:avoid block */
 .pv-week-tfoot-td {
   border: none;
