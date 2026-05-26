@@ -1710,11 +1710,14 @@ function exportPDF() {
     const overlay = document.createElement('div');
     overlay.id = 'pdf-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:white;display:flex;flex-direction:column;';
+    // Use inline onclick — Safari requires window.print() to fire from a native HTML
+    // event attribute, not from addEventListener on a dynamically created element.
+    const closeScript = "var o=document.getElementById('pdf-overlay');if(o)o.remove();var p=document.getElementById('printView');if(p)p.remove();";
     overlay.innerHTML =
       '<div style="background:#1a2240;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">'
       + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.15em;color:rgba(255,255,255,0.45);flex:1">TRAINING PLAN</span>'
-      + '<button id="pvPrintBtn" style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.1em;background:#C8392B;color:white;border:none;padding:9px 18px;border-radius:3px;cursor:pointer">&#8595; SAVE AS PDF</button>'
-      + '<button id="pvCloseBtn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:9px 13px;border-radius:3px;font-size:14px;cursor:pointer;margin-left:6px">&#10005;</button>'
+      + '<button onclick="window.print()" style="font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:0.1em;background:#C8392B;color:white;border:none;padding:9px 18px;border-radius:3px;cursor:pointer">&#8595; SAVE AS PDF</button>'
+      + '<button onclick="' + closeScript + '" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:9px 13px;border-radius:3px;font-size:14px;cursor:pointer;margin-left:6px">&#10005;</button>'
       + '</div>'
       + '<div style="background:rgba(200,57,43,0.07);border-bottom:1px solid rgba(200,57,43,0.18);padding:8px 14px;font-family:system-ui,sans-serif;font-size:12px;color:#C8392B;text-align:center;flex-shrink:0">'
       + tip
@@ -1724,9 +1727,11 @@ function exportPDF() {
       + '</div>';
 
     document.body.appendChild(overlay);
-    document.getElementById('pvPrintBtn').addEventListener('click', function() { window.print(); });
-    document.getElementById('pvCloseBtn').addEventListener('click', function() { overlay.remove(); if (pv) pv.remove(); });
-    window.addEventListener('afterprint', function h() { overlay.remove(); if (pv) pv.remove(); window.removeEventListener('afterprint', h); });
+    window.addEventListener('afterprint', function h() {
+      var o = document.getElementById('pdf-overlay'); if (o) o.remove();
+      if (pv) pv.remove();
+      window.removeEventListener('afterprint', h);
+    });
 
   } else {
     // Chrome on Windows / Mac / Android — standard print dialog
