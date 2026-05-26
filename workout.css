@@ -189,11 +189,20 @@
 
     .workout-chip {
       border-radius: 3px; padding: 4px 7px; color: var(--bg);
-      font-size: 11px; line-height: 1.35; cursor: pointer;
+      font-size: 11px; line-height: 1.35; cursor: grab;
       transition: filter 0.15s, transform 0.12s, box-shadow 0.12s;
       box-shadow: 1px 2px 0 rgba(26,34,64,0.28);
+      touch-action: none; user-select: none; -webkit-user-select: none;
     }
-    .workout-chip:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 2px 3px 0 rgba(26,34,64,0.32); }
+    .workout-chip:hover  { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 2px 3px 0 rgba(26,34,64,0.32); }
+    .workout-chip:active { cursor: grabbing; }
+
+    /* Drop-target highlight */
+    .day-cell.drag-over {
+      background: rgba(26,34,64,0.06) !important;
+      outline: 2px dashed rgba(200,52,26,0.55);
+      outline-offset: -3px;
+    }
 
     .chip-type     { font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.1em; }
     .chip-dist     { font-size: 12px; font-weight: 500; margin-top: 1px; }

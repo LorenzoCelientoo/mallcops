@@ -1000,6 +1000,7 @@ function makeCell(year, month, day, otherMonth, isToday = false) {
   const ws  = workouts[key] || [];
   const cell = document.createElement('div');
   cell.className = 'day-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
+  cell.dataset.dateKey = key;   // used by drag-and-drop to identify target
 
   const num = document.createElement('div'); num.className = 'day-num'; num.textContent = day;
   cell.appendChild(num);
@@ -1020,7 +1021,11 @@ function makeCell(year, month, day, otherMonth, isToday = false) {
         dist.textContent = dtxt; chip.appendChild(dist);
       }
       if (w.duration && w.type !== 'rest') { const dur  = document.createElement('div'); dur.className  = 'chip-duration'; dur.textContent  = w.duration; chip.appendChild(dur); }
-      chip.addEventListener('click', e => { e.stopPropagation(); openModal(key, w.id); });
+      chip.addEventListener('click', e => {
+        if (chip._dragJustEnded) { chip._dragJustEnded = false; e.stopPropagation(); return; }
+        e.stopPropagation(); openModal(key, w.id);
+      });
+      initChipDrag(chip, key, w.id);
       wrap.appendChild(chip);
     });
     cell.appendChild(wrap);
@@ -1034,6 +1039,109 @@ function makeCell(year, month, day, otherMonth, isToday = false) {
   }
   return cell;
 }
+
+// ── Drag-to-move workouts ──────────────────────────────────────────────────
+// Pointer Events (pointerdown/move/up) work for both mouse and touch.
+// A ghost clone follows the cursor; the target day cell is highlighted.
+// A click that immediately follows a drag is suppressed via _dragJustEnded.
+
+let drag = null;
+
+function initChipDrag(chip, key, workoutId) {
+  chip.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;           // primary button / first touch only
+    drag = {
+      sourceKey: key, workoutId, chip,
+      startX: e.clientX, startY: e.clientY,
+      isDragging: false, ghost: null, overCell: null
+    };
+  });
+}
+
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+
+  if (!drag.isDragging) {
+    if (Math.hypot(dx, dy) < 6) return;     // wait for intentional movement
+    drag.isDragging = true;
+
+    const rect    = drag.chip.getBoundingClientRect();
+    drag.offsetX  = drag.startX - rect.left;
+    drag.offsetY  = drag.startY - rect.top;
+
+    // Build ghost
+    const ghost = drag.chip.cloneNode(true);
+    ghost.style.cssText = `position:fixed;width:${rect.width}px;`
+      + `pointer-events:none;opacity:0.9;z-index:9999;`
+      + `box-shadow:0 10px 32px rgba(0,0,0,0.38);`
+      + `transform:rotate(2deg) scale(1.06);border-radius:5px;`;
+    document.body.appendChild(ghost);
+    drag.ghost = ghost;
+
+    // Fade original, block its pointer events so elementFromPoint can see cells
+    drag.chip.style.opacity       = '0.25';
+    drag.chip.style.pointerEvents = 'none';
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor     = 'grabbing';
+  }
+
+  // Reposition ghost
+  drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+  drag.ghost.style.top  = (e.clientY - drag.offsetY) + 'px';
+
+  // Find the day-cell under the cursor (ghost + chip both have pointer-events:none)
+  const el         = document.elementFromPoint(e.clientX, e.clientY);
+  const targetCell = el ? el.closest('[data-date-key]') : null;
+
+  if (drag.overCell !== targetCell) {
+    if (drag.overCell) drag.overCell.classList.remove('drag-over');
+    drag.overCell = targetCell;
+    if (targetCell) targetCell.classList.add('drag-over');
+  }
+
+  e.preventDefault();   // prevent page scroll while dragging on mobile
+}, { passive: false });
+
+document.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const { isDragging, sourceKey, workoutId, chip, ghost, overCell } = drag;
+
+  // Clean up before any render
+  if (ghost)    ghost.remove();
+  if (overCell) overCell.classList.remove('drag-over');
+  chip.style.opacity       = '';
+  chip.style.pointerEvents = '';
+  document.body.style.userSelect = '';
+  document.body.style.cursor     = '';
+
+  if (isDragging) chip._dragJustEnded = true;  // swallow the click that follows
+  drag = null;
+
+  if (isDragging && overCell && overCell.dataset.dateKey !== sourceKey) {
+    const targetKey = overCell.dataset.dateKey;
+    const srcList   = workouts[sourceKey] || [];
+    const idx       = srcList.findIndex(x => x.id === workoutId);
+    if (idx !== -1) {
+      const [moved] = srcList.splice(idx, 1);
+      if (srcList.length === 0) delete workouts[sourceKey];
+      workouts[targetKey] = [...(workouts[targetKey] || []), moved];
+      save();
+      render();
+    }
+  }
+});
+
+document.addEventListener('pointercancel', () => {
+  if (!drag) return;
+  if (drag.ghost)    drag.ghost.remove();
+  if (drag.overCell) drag.overCell.classList.remove('drag-over');
+  drag.chip.style.opacity       = '';
+  drag.chip.style.pointerEvents = '';
+  document.body.style.userSelect = '';
+  document.body.style.cursor     = '';
+  drag = null;
+});
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
 
