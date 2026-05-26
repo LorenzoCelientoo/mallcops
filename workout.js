@@ -1903,8 +1903,20 @@ function buildMonthPage(isHighDPI = false) {
         + '</div>';
     }
 
+    // Compute available vertical space for the hero so it never overflows.
+    // page height − month-header − cal-thead − (rows × row-height) − small buffer
+    //   Safari: 785px page, 44px hdr, 34px thead, 108px/row
+    //   Chrome: 1047px page, 57px hdr, 44px thead, 145px/row
+    const pageH     = isHighDPI ? 1047 : 785;
+    const hdrH      = isHighDPI ?   57 :  44;
+    const theadH    = isHighDPI ?   44 :  34;
+    const calRowH   = isHighDPI ?  145 : 108;
+    const heroMaxH  = Math.max(40, pageH - hdrH - theadH - numRows * calRowH - 14);
+
     const hero = document.createElement('div');
     hero.className = 'pv-race-hero' + (compact ? ' pv-race-hero-compact' : '');
+    hero.style.maxHeight = heroMaxH + 'px';
+    hero.style.overflow  = 'hidden';
     hero.innerHTML = (compact ? '' : '<div class="pv-race-pre">PREPARING FOR</div>')
       + '<div class="pv-race-name" style="font-size:' + nameFontSize + 'px;line-height:0.92">'
       + raceName + '</div>'
