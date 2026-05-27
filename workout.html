@@ -40,6 +40,7 @@
 <div class="view-tabs">
   <button class="view-tab active" id="tabWorkout">WORKOUT</button>
   <button class="view-tab" id="tabStats">STATISTICS</button>
+  <button class="view-tab" id="tabTemplates">TEMPLATES</button>
 </div>
 
 <div class="app" id="appWorkout">
@@ -106,7 +107,7 @@
       <div class="upcoming-list" id="upcomingList"></div>
     </div>
 
-    <div class="card" id="templatesCard">
+    <div class="card" id="templatesCard" style="display:none">
       <div class="card-title">Templates</div>
       <div id="templatesList"></div>
       <button class="new-template-btn" id="newTemplateBtn" type="button">+ NEW TEMPLATE</button>
@@ -131,6 +132,22 @@
     <div id="statsIntensity"></div>
     <div class="stats-breakdown" id="statsBreakdown"></div>
     <div class="stats-log-section" id="statsLog"></div>
+  </div>
+</div>
+
+<!-- Templates Panel -->
+<div class="templates-panel" id="appTemplates">
+  <div class="tpl-panel-card">
+    <div class="tpl-panel-section-head">
+      <span class="tpl-panel-section-title">My Templates</span>
+      <button class="tpl-panel-new-btn" id="tplPanelNewBtn" type="button">+ NEW TEMPLATE</button>
+    </div>
+    <div class="tpl-panel-grid" id="tplPanelMine"></div>
+
+    <div class="tpl-panel-section-head tpl-panel-section-head--second">
+      <span class="tpl-panel-section-title">Public Templates</span>
+    </div>
+    <div class="tpl-panel-grid" id="tplPanelPublic"></div>
   </div>
 </div>
 
@@ -224,6 +241,7 @@
   </div>
 </div>
 
+<script src="runners.js"></script>
 <script src="workout.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -430,21 +430,23 @@
 
     .runners-label {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 2rem;
-      letter-spacing: 0.4em;
+      font-size: clamp(52px, 8vw, 96px);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: var(--red);
+      color: #1a2240;
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
-        .runners-label-tap {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.5rem;
-      letter-spacing: 0.4em;
+    .runners-label-tap {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.30em;
       text-transform: uppercase;
       color: var(--red);
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
     }
 
     .runners-grid {
@@ -597,6 +599,7 @@
     </a>
     <div class="nav-links" id="nav-links">
       <a href="#home" onclick="window.scrollTo({top:0,behavior:'smooth'});closeNav();return false;">HOME</a>
+      <a href="#our-story" onclick="document.getElementById('our-story').scrollIntoView({behavior:'smooth'});closeNav();return false;">OUR STORY</a>
       <a href="#runners-section" onclick="document.getElementById('runners-section').scrollIntoView({behavior:'smooth'});closeNav();return false;">COPS</a>
       <a href="schedule.html">SCHEDULE</a>
       <a href="login.html" class="nav-login">LOG IN</a>
@@ -631,85 +634,182 @@
       <p class="coming-text">You are safe</p>
     </div>
 
-    <!-- ── Race Countdown Wall ──────────────────────────────────── -->
+    <!-- ── About / Our Story ──────────────────────────────────── -->
     <style>
-      .countdown-section { padding: 3.5rem 0 2rem; }
-      .countdown-title {
-        font-family: 'Bebas Neue', sans-serif;
-        font-size: clamp(13px, 2.2vw, 16px);
-        letter-spacing: 0.48em;
-        color: rgba(26,34,64,0.38);
-        text-align: center;
-        margin-bottom: 2rem;
-      }
-      .countdown-grid {
-        display: flex;
-        gap: 18px;
-        justify-content: center;
-        flex-wrap: wrap;
-        padding: 0 1.5rem;
+      .about-section {
+        padding: 4rem 1.5rem 4rem;
         max-width: 960px;
         margin: 0 auto;
       }
-      .cd-card {
-        background: #1a2240;
-        border-radius: 6px;
-        padding: 22px 30px 18px;
-        text-align: center;
-        min-width: 160px;
-        box-shadow: 4px 6px 0 rgba(26,34,64,0.28);
-        position: relative;
-        overflow: hidden;
-        flex: 0 0 auto;
+      .about-top {
+        display: flex;
+        align-items: center;
+        gap: 10rem;
+        margin-bottom: 2.8rem;
       }
-      .cd-card::before {
-        content: '';
-        position: absolute; inset: 0; pointer-events: none;
-        background: repeating-linear-gradient(-55deg,
-          transparent, transparent 18px,
-          rgba(255,255,255,0.018) 18px, rgba(255,255,255,0.018) 19px);
-      }
-      .cd-runner {
+      .about-top-left { flex: 0 0 auto; }
+      .about-eyebrow {
         font-family: 'Barlow', sans-serif;
-        font-size: 10px; font-weight: 400;
-        letter-spacing: 0.32em;
-        color: rgba(240,232,213,0.42);
+        font-size: 10px; font-weight: 600;
+        letter-spacing: 0.50em;
+        color: rgba(26,34,64,0.28);
         text-transform: uppercase;
-        margin-bottom: 4px;
+        margin-bottom: 0.7rem;
       }
-      .cd-race {
+      .about-headline {
         font-family: 'Bebas Neue', sans-serif;
-        font-size: 19px; letter-spacing: 0.07em;
-        color: #f0e8d5; line-height: 1.15;
-        margin-bottom: 16px;
+        font-size: clamp(52px, 10vw, 100px);
+        line-height: 0.90;
+        color: #1a2240;
+        letter-spacing: 0.02em;
       }
-      .cd-number {
+      .about-rule {
+        border: none;
+        border-top: 1.5px solid rgba(26,34,64,0.10);
+        margin: 0 0 2.4rem;
+      }
+      .about-lead {
+        font-family: 'Barlow', sans-serif;
+        font-size: clamp(15px, 2.4vw, 22px);
+        font-weight: 300;
+        font-style: italic;
+        line-height: 1.55;
+        color: rgba(26,34,64,0.52);
+        margin-bottom: 2rem;
+        padding-left: 1rem;
+        border-left: 3px solid #1a2240;
+      }
+      .about-body {
+        font-family: 'Barlow', sans-serif;
+        font-size: 15px;
+        font-weight: 300;
+        line-height: 1.80;
+        color: rgba(26,34,64,0.65);
+      }
+      .about-body p { margin: 0 0 1.3em; }
+      .about-body p:last-child { margin-bottom: 0; }
+      .about-body strong { font-weight: 500; color: #1a2240; }
+
+      /* ── Card shuffle stack ── */
+      .shuffle-wrap {
+        flex: 0 0 190px;
+        position: relative;
+        height: 260px;
+      }
+      .shuffle-wrap::before,
+      .shuffle-wrap::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(26,34,64,0.10);
+      }
+      .shuffle-wrap::before {
+        transform: rotate(6deg) translate(5px, 3px);
+        z-index: 0; opacity: 0.7;
+      }
+      .shuffle-wrap::after {
+        transform: rotate(-4deg) translate(-4px, 5px);
+        z-index: 0; opacity: 0.5;
+      }
+      .shuffle-card {
+        position: absolute;
+        inset: 0;
+        background: #1a2240;
+        border-radius: 10px;
+        box-shadow: 0 6px 24px rgba(26,34,64,0.22);
+        overflow: hidden;
+        z-index: 1;
+        will-change: transform, opacity;
+      }
+      .shuffle-card.card-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .shuffle-photo {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        object-position: top center;
+        display: block;
+      }
+      .shuffle-name-bar {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        background: linear-gradient(to top, rgba(10,16,44,0.92) 0%, transparent 100%);
+        padding: 32px 14px 14px;
         font-family: 'Bebas Neue', sans-serif;
-        font-size: 76px; line-height: 1;
-        color: #c8341a; letter-spacing: -0.02em;
-        transition: color 0.4s;
+        font-size: 24px;
+        letter-spacing: 0.07em;
+        color: #fff;
+        line-height: 1;
       }
-      .cd-number.cd-soon  { color: #d48520; }
-      .cd-number.cd-today { color: #2E7D5B; animation: cdpulse 1.1s ease-in-out infinite alternate; }
-      @keyframes cdpulse { from { opacity: 0.65; } to { opacity: 1; } }
-      .cd-unit {
-        font-family: 'Barlow', sans-serif;
-        font-size: 10px; letter-spacing: 0.38em;
-        color: rgba(240,232,213,0.32);
-        margin-top: 2px; text-transform: uppercase;
+      .shuffle-initials {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%; height: 100%;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 80px;
+        color: rgba(255,255,255,0.18);
       }
-      .cd-date {
-        font-family: 'Barlow', sans-serif;
-        font-size: 9.5px; letter-spacing: 0.1em;
-        color: rgba(240,232,213,0.22);
-        margin-top: 13px;
+
+      /* ── Mobile ── */
+      @media (max-width: 640px) {
+        .about-section { padding: 2.5rem 1.2rem 3rem; }
+        .about-top {
+          flex-direction: column;
+          gap: 1.8rem;
+          margin-bottom: 2rem;
+          align-items: flex-start;
+        }
+        .shuffle-wrap { display: none; }
+        .about-headline { font-size: 52px; }
+        .about-lead     { font-size: 15px; }
+        .about-body     { font-size: 14px; }
       }
     </style>
-    <div class="countdown-section" id="countdown-section" style="display:none">
-      <div class="countdown-title">On the Clock</div>
-      <div class="countdown-grid" id="countdown-grid"></div>
-    </div>
 
+    <div class="about-section" id="our-story">
+      <div class="about-top">
+        <div class="about-top-left">
+          <div class="about-eyebrow">Schaumburg, Illinois</div>
+          <div class="about-headline">How It<br>All Started</div>
+        </div>
+        <div class="shuffle-wrap" id="shuffleWrap"></div>
+      </div>
+      <hr class="about-rule">
+
+      <p class="about-lead">
+        Someone thought it would be a great idea to wake up at 5:30 AM
+        on a Tuesday in a Chicago winter to go running. Somehow, six other
+        people said yes.
+      </p>
+
+      <div class="about-body">
+        <p>
+          <strong>Eric, Will, Iggy, Kyle, John, Clayton, and Karl</strong>
+          started meeting every Tuesday morning outside Woodfield Mall in
+          Schaumburg &mdash; not because it was a scenic route, not because the
+          parking lot was particularly inspiring, but mostly because
+          someone had to pick a spot and that was the spot.
+        </p>
+        <p>
+          They ran through the Chicago winter. Week after week. In the dark,
+          in the cold, occasionally questioning their life choices.
+          People started asking what the group was called. They were running
+          laps around a mall at dawn, so &mdash; <strong>Mall Cops.</strong>
+          Obviously.
+        </p>
+        <p>
+          Word got out. More runners joined. Then more. Turns out a lot of
+          people in the Chicago suburbs also enjoy suffering voluntarily at
+          unreasonable hours. The group kept growing, the Tuesday runs kept
+          happening, and at some point it stopped being a weird thing
+          seven friends did and became an actual community.
+        </p>
+      </div>
+    </div>
     <div class="runners-section" id="runners-section">
       <p class="runners-label">Officers on Duty</p>
       <p class="runners-label-tap">Tap to see our PBs</p>
@@ -724,6 +824,109 @@
   </div>
 
   <script src="runners.js"></script>
+  <script>
+  (function () {
+    var wrap = document.getElementById('shuffleWrap');
+    if (!wrap || !window.RUNNERS || !window.RUNNERS.length) return;
+    var runners = window.RUNNERS;
+
+    function makeCard(name) {
+      var card = document.createElement('div');
+      card.className = 'shuffle-card card-hidden';
+
+      var img = document.createElement('img');
+      img.className = 'shuffle-photo';
+      img.alt = name;
+      img.src = 'pictures/' + name + '.png';
+      img.onerror = function () {
+        this.style.display = 'none';
+        var init = document.createElement('div');
+        init.className = 'shuffle-initials';
+        init.textContent = name.charAt(0).toUpperCase();
+        card.insertBefore(init, card.firstChild);
+      };
+
+      var bar = document.createElement('div');
+      bar.className = 'shuffle-name-bar';
+      bar.textContent = name;
+
+      card.appendChild(img);
+      card.appendChild(bar);
+      return card;
+    }
+
+    var cardA = makeCard(runners[0]);
+    var cardB = makeCard(runners[1] || runners[0]);
+    cardA.classList.remove('card-hidden');
+    wrap.appendChild(cardA);
+    wrap.appendChild(cardB);
+
+    var activeCard  = cardA;
+    var standbyCard = cardB;
+    var idx = 1;
+
+    function loadImg(img, name) {
+      var exts = ['png', 'jpg', 'JPG', 'webp'];
+      var ei = 0;
+      img.style.display = '';
+      img.src = 'pictures/' + name + '.' + exts[0];
+      img.onerror = function () {
+        ei++;
+        if (ei < exts.length) { img.src = 'pictures/' + name + '.' + exts[ei]; }
+        else { img.style.display = 'none'; }
+      };
+    }
+
+    setInterval(function () {
+      idx = (idx + 1) % runners.length;
+      var name = runners[idx];
+
+      // Random sideways direction and rotation
+      var dir    = Math.random() > 0.5 ? 1 : -1;
+      var txOut  = (40 + Math.random() * 30) * dir;
+      var rotOut = (3 + Math.random() * 5) * dir;
+      var txIn   = -(35 + Math.random() * 25) * dir;
+      var rotIn  = -(2  + Math.random() * 4)  * dir;
+
+      // Load next runner into standby card
+      var img = standbyCard.querySelector('.shuffle-photo');
+      var bar = standbyCard.querySelector('.shuffle-name-bar');
+      if (img) loadImg(img, name);
+      if (bar) bar.textContent = name;
+
+      // Park standby off-screen instantly (no transition)
+      standbyCard.style.transition = 'none';
+      standbyCard.style.transform  = 'translateX(' + txIn + 'px) rotate(' + rotIn + 'deg)';
+      standbyCard.style.opacity    = '0';
+      standbyCard.classList.remove('card-hidden');
+
+      // Fly active card out sideways
+      activeCard.style.transition = 'transform 0.32s cubic-bezier(0.4,0,1,1), opacity 0.28s ease';
+      activeCard.style.transform  = 'translateX(' + txOut + 'px) rotate(' + rotOut + 'deg)';
+      activeCard.style.opacity    = '0';
+
+      // Animate standby into centre on next frame
+      var incoming = standbyCard;
+      var outgoing = activeCard;
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          incoming.style.transition = 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.32s ease';
+          incoming.style.transform  = 'none';
+          incoming.style.opacity    = '1';
+        });
+      });
+
+      activeCard  = incoming;
+      standbyCard = outgoing;
+      setTimeout(function () {
+        outgoing.style.transition = 'none';
+        outgoing.style.transform  = 'none';
+        outgoing.style.opacity    = '0';
+        outgoing.classList.add('card-hidden');
+      }, 380);
+    }, 2800);
+  }());
+  </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script>
@@ -835,97 +1038,5 @@
     }
   </script>
 
-  <!-- ── Race Countdown Wall script ─────────────────────────── -->
-  <script>
-  (function () {
-    const section = document.getElementById('countdown-section');
-    const grid    = document.getElementById('countdown-grid');
-
-    // days until a YYYY-MM-DD date string (negative = past)
-    function daysUntil(dateStr) {
-      const race  = new Date(dateStr + 'T00:00:00');
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      return Math.round((race - today) / 86400000);
-    }
-
-    function formatDate(dateStr) {
-      return new Date(dateStr + 'T00:00:00')
-        .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        .toUpperCase();
-    }
-
-    // Build or refresh a card's countdown number
-    function refreshCard(el, dateStr) {
-      const numEl  = el.querySelector('.cd-number');
-      const unitEl = el.querySelector('.cd-unit');
-      const days   = daysUntil(dateStr);
-
-      numEl.classList.remove('cd-soon', 'cd-today');
-
-      if (days <= 0) {
-        numEl.textContent = days === 0 ? 'TODAY' : 'DONE';
-        unitEl.textContent = days === 0 ? '🎯 RACE DAY' : '';
-        if (days === 0) numEl.classList.add('cd-today');
-      } else if (days === 1) {
-        numEl.textContent = '1';
-        unitEl.textContent = 'DAY TO GO';
-        numEl.classList.add('cd-soon');
-      } else {
-        numEl.textContent = days;
-        unitEl.textContent = 'DAYS TO GO';
-        if (days <= 7) numEl.classList.add('cd-soon');
-      }
-    }
-
-    function buildCard(runner, raceName, raceDate) {
-      const card = document.createElement('div');
-      card.className = 'cd-card';
-      card.dataset.raceDate = raceDate;
-      card.innerHTML =
-        '<div class="cd-runner">' + runner + '</div>' +
-        '<div class="cd-race">'   + (raceName || 'RACE DAY') + '</div>' +
-        '<div class="cd-number"></div>' +
-        '<div class="cd-unit"></div>' +
-        '<div class="cd-date">'   + formatDate(raceDate) + '</div>';
-      refreshCard(card, raceDate);
-      grid.appendChild(card);
-    }
-
-    async function loadCountdowns() {
-      try {
-        const snap = await firebase.firestore().collection('workouts').get();
-        const entries = [];
-
-        snap.forEach(doc => {
-          const d = doc.data();
-          if (!d.raceDate) return;
-          const days = daysUntil(d.raceDate);
-          if (days < 0) return; // past race — skip
-          entries.push({ runner: doc.id, raceName: d.raceName || '', raceDate: d.raceDate, days });
-        });
-
-        if (!entries.length) return; // no upcoming races → keep section hidden
-
-        // Sort by closest race first
-        entries.sort((a, b) => a.days - b.days);
-        entries.forEach(e => buildCard(e.runner, e.raceName, e.raceDate));
-
-        section.style.display = '';
-
-        // Refresh all countdowns every minute
-        setInterval(() => {
-          grid.querySelectorAll('.cd-card').forEach(card => {
-            refreshCard(card, card.dataset.raceDate);
-          });
-        }, 60000);
-
-      } catch (e) {
-        // workouts collection not publicly readable — section stays hidden
-      }
-    }
-
-    loadCountdowns();
-  }());
-  </script>
 </body>
 </html>

@@ -158,18 +158,157 @@ function saveTemplates() {
 }
 
 // ── Load public templates from other runners ───────────────────────────────
+// Reads directly from each runner's workouts doc (same collection/rules as own data).
+// Falls back to checking public_templates collection too, for compatibility.
 
 async function loadPublicTemplates() {
-  try {
-    const snap = await db.collection('public_templates').get();
-    publicTemplates = snap.docs
-      .map(d => d.data())
-      .filter(t => t.createdBy !== currentUser);
-  } catch(e) { console.error('loadPublicTemplates:', e); }
+  publicTemplates = [];
+
+  // Strategy 1: scan ALL runners' workouts docs for isPublic templates (including own)
+  const allRunners = (window.RUNNERS || []);
+  const fetchPromises = allRunners.map(name =>
+    db.collection('workouts').doc(name).get()
+      .then(doc => {
+        if (!doc.exists) return [];
+        const tpls = (doc.data().templates || []).filter(t => t.isPublic);
+        return tpls.map(t => ({ ...t, createdBy: t.createdBy || name }));
+      })
+      .catch(() => [])
+  );
+
+  // Strategy 2: also check legacy public_templates collection (all, including own)
+  const legacyFetch = db.collection('public_templates').get()
+    .then(snap => snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    .catch(() => []);
+
+  const [runnerResults, legacy] = await Promise.all([
+    Promise.all(fetchPromises),
+    legacyFetch,
+  ]);
+
+  // Merge: prefer workouts-sourced data; de-dupe by id
+  const seen = new Set();
+  for (const batch of runnerResults) {
+    for (const t of batch) {
+      if (!seen.has(t.id)) { seen.add(t.id); publicTemplates.push(t); }
+    }
+  }
+  for (const t of legacy) {
+    if (!seen.has(t.id)) { seen.add(t.id); publicTemplates.push(t); }
+  }
+
   renderTemplatesCard();
+  renderTemplatesPanel();
+  // Refresh the modal dropdown if the modal is currently open
+  if (document.getElementById('overlay').classList.contains('open')) {
+    renderLoadTemplateRow();
+  }
 }
 
 // ── Templates sidebar card ─────────────────────────────────────────────────
+
+function renderTemplatesPanel() {
+  const mineEl   = document.getElementById('tplPanelMine');
+  const publicEl = document.getElementById('tplPanelPublic');
+  if (!mineEl || !publicEl) return;
+
+  // ── MY TEMPLATES ──
+  mineEl.innerHTML = '';
+  if (!templates.length) {
+    mineEl.innerHTML = '<div class="tpl-panel-empty">No templates yet. Click + NEW TEMPLATE to create one.</div>';
+  } else {
+    templates.forEach(tpl => mineEl.appendChild(makeTplPanelCard(tpl, false)));
+  }
+
+  // ── PUBLIC TEMPLATES ──
+  publicEl.innerHTML = '';
+  if (!publicTemplates.length) {
+    publicEl.innerHTML = '<div class="tpl-panel-empty">No public templates available yet.</div>';
+  } else {
+    publicTemplates.forEach(tpl => publicEl.appendChild(makeTplPanelCard(tpl, true)));
+  }
+}
+
+function makeTplPanelCard(tpl, isPublic) {
+  const ti   = typeInfo(tpl.type);
+  const card = document.createElement('div');
+  card.className = 'tpl-card';
+
+  // Top row: dot + type
+  const top = document.createElement('div');
+  top.className = 'tpl-card-top';
+  const dot = document.createElement('div');
+  dot.className = 'tpl-card-dot';
+  dot.style.background = ti.color;
+  const typeEl = document.createElement('div');
+  typeEl.className = 'tpl-card-type';
+  typeEl.textContent = ti.label;
+  top.appendChild(dot);
+  top.appendChild(typeEl);
+  card.appendChild(top);
+
+  // Name
+  const nameEl = document.createElement('div');
+  nameEl.className = 'tpl-card-name';
+  nameEl.textContent = isPublic
+    ? `${tpl.name || 'Untitled'} (${tpl.createdBy})`
+    : (tpl.name || 'Untitled');
+  card.appendChild(nameEl);
+
+  // Meta: dist / pace
+  const parts = [];
+  if (tpl.dist)     parts.push(tpl.dist + ' mi');
+  if (tpl.pace)     parts.push(tpl.pace + ' /mi');
+  if (tpl.duration) parts.push(tpl.duration);
+  if (parts.length) {
+    const meta = document.createElement('div');
+    meta.className = 'tpl-card-meta';
+    meta.textContent = parts.join('  ·  ');
+    card.appendChild(meta);
+  }
+
+  if (isPublic) {
+    // Lock badge — not editable
+    const lock = document.createElement('span');
+    lock.className = 'tpl-card-lock';
+    lock.textContent = '🔒';
+    card.appendChild(lock);
+    card.title = 'Click to schedule for today';
+    card.addEventListener('click', () => scheduleSharedTemplate(tpl));
+  } else {
+    // Action buttons: edit + delete
+    const actions = document.createElement('div');
+    actions.className = 'tpl-card-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'tpl-card-btn';
+    editBtn.textContent = 'Edit';
+    editBtn.type = 'button';
+    editBtn.addEventListener('click', e => { e.stopPropagation(); openModalForTemplate(tpl.id); });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'tpl-card-btn tpl-card-del';
+    delBtn.textContent = '✕';
+    delBtn.type = 'button';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm(`Delete template "${tpl.name || 'Untitled'}"?`)) {
+        if (tpl.isPublic) {
+          db.collection('public_templates').doc(tpl.id).delete().catch(console.error);
+        }
+        templates = templates.filter(t => t.id !== tpl.id);
+        saveTemplates(); renderTemplatesCard(); renderTemplatesPanel();
+      }
+    });
+
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    card.appendChild(actions);
+    card.addEventListener('click', () => openModalForTemplate(tpl.id));
+  }
+
+  return card;
+}
 
 function renderTemplatesCard() {
   const list = document.getElementById('templatesList');
@@ -204,6 +343,11 @@ function renderTemplatesCard() {
     publicTemplates.forEach(tpl => {
       list.appendChild(makeTplItem(tpl, true));
     });
+  }
+  // Keep the panel in sync if it's open
+  if (document.getElementById('appTemplates') &&
+      document.getElementById('appTemplates').classList.contains('visible')) {
+    renderTemplatesPanel();
   }
 }
 
@@ -354,18 +498,18 @@ async function saveTemplateFromModal() {
     templates.push(obj);
   }
 
-  // Sync with public_templates collection
+  // Primary source of truth: template saved inside the runner's workouts doc (always works).
+  // loadPublicTemplates() reads all runners' workouts docs — no separate collection needed.
+  // Mirror to public_templates collection as a bonus (may fail if Firestore rules are narrow).
   try {
     if (isPublic) {
-      // Publish (or update) the public copy
-      await db.collection('public_templates').doc(tplId).set({ ...obj, createdBy: currentUser });
+      db.collection('public_templates').doc(tplId).set({ ...obj, createdBy: currentUser }).catch(() => {});
     } else if (wasPublic) {
-      // Was public, now private → remove from public collection
-      await db.collection('public_templates').doc(tplId).delete();
+      db.collection('public_templates').doc(tplId).delete().catch(() => {});
     }
-  } catch(e) { console.error('sync public_templates:', e); }
+  } catch(e) { /* ignore — workouts-doc is the real source */ }
 
-  saveTemplates(); renderTemplatesCard(); closeModal();
+  saveTemplates(); renderTemplatesCard(); renderTemplatesPanel(); closeModal();
 }
 
 // ── Load-template select row in modal ─────────────────────────────────────
@@ -1718,16 +1862,30 @@ document.getElementById('statsNowBtn').addEventListener('click', () => {
 document.getElementById('tabWorkout').addEventListener('click', () => {
   document.getElementById('tabWorkout').classList.add('active');
   document.getElementById('tabStats').classList.remove('active');
+  document.getElementById('tabTemplates').classList.remove('active');
   document.getElementById('appWorkout').style.display = '';
   document.getElementById('appStats').classList.remove('visible');
+  document.getElementById('appTemplates').classList.remove('visible');
 });
 
 document.getElementById('tabStats').addEventListener('click', () => {
   document.getElementById('tabStats').classList.add('active');
   document.getElementById('tabWorkout').classList.remove('active');
+  document.getElementById('tabTemplates').classList.remove('active');
   document.getElementById('appWorkout').style.display = 'none';
   document.getElementById('appStats').classList.add('visible');
+  document.getElementById('appTemplates').classList.remove('visible');
   renderStats();
+});
+
+document.getElementById('tabTemplates').addEventListener('click', () => {
+  document.getElementById('tabTemplates').classList.add('active');
+  document.getElementById('tabWorkout').classList.remove('active');
+  document.getElementById('tabStats').classList.remove('active');
+  document.getElementById('appWorkout').style.display = 'none';
+  document.getElementById('appStats').classList.remove('visible');
+  document.getElementById('appTemplates').classList.add('visible');
+  renderTemplatesPanel();
 });
 
 // ── Athlete switcher (coach mode) ──────────────────────────────────────────
@@ -1773,6 +1931,7 @@ document.getElementById('templateSelect').addEventListener('change', function() 
 });
 
 document.getElementById('newTemplateBtn').addEventListener('click', () => openModalForTemplate(null));
+document.getElementById('tplPanelNewBtn').addEventListener('click', () => openModalForTemplate(null));
 
 // Visibility toggle click
 document.getElementById('templatePublicToggle').addEventListener('click', function() {
