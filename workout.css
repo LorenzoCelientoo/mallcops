@@ -41,8 +41,7 @@
       content: '';
       position: fixed; inset: 0;
       pointer-events: none; z-index: 1;
-      background-image: radial-gradient(circle, rgba(26,34,64,0.22) 1px, transparent 1px);
-      background-size: 22px 22px;
+      background: repeating-linear-gradient(-55deg,transparent,transparent 38px,var(--stripe) 38px,var(--stripe) 39px);
     }
 
     /* ── TOPBAR ── */
