@@ -1331,9 +1331,11 @@ function updateWeekBars() {
 
 function getWeekOfMonth(d) {
   const first = new Date(d.getFullYear(), d.getMonth(), 1);
-  const dow = first.getDay(), offset = dow <= 1 ? 1 - dow : 8 - dow;
-  const monday = new Date(first); monday.setDate(first.getDate() + offset - 7);
-  return Math.ceil((d - monday) / (7 * 86400000));
+  const dow = first.getDay();
+  const daysToMon = dow === 0 ? 6 : dow - 1;   // how far back to the Monday on/before the 1st
+  const monday = new Date(first);
+  monday.setDate(first.getDate() - daysToMon);
+  return Math.floor((d - monday) / (7 * 86400000)) + 1;
 }
 
 function updateUpcoming() {
