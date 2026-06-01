@@ -698,10 +698,10 @@
       background: rgba(255,255,255,0.7); outline: none; transition: border-color 0.18s;
     }
     .seg-input:focus { border-color: var(--red); }
-    .seg-input-dist { width: 70px; }
-    .seg-input-unit { width: 58px; cursor: pointer; }
-    .seg-input-pace { width: 78px; }
-    .seg-input-time { width: 70px; }
+    .seg-input-dist { width: 90px; }
+    .seg-input-unit { width: 72px; cursor: pointer; }
+    .seg-input-pace { width: 96px; }
+    .seg-input-time { width: 90px; }
 
     .interval-block {
       border: 1px solid var(--border); border-radius: var(--r);
@@ -717,7 +717,7 @@
       color: rgba(26,34,64,0.45); white-space: nowrap;
     }
     .block-sets-inp {
-      width: 44px; padding: 3px 6px; text-align: center;
+      width: 62px; padding: 4px 8px; text-align: center;
       border: 1px solid var(--border); border-radius: 3px;
       font-size: 16px; font-family: 'Barlow', sans-serif;
       color: var(--dark); background: rgba(255,255,255,0.85); outline: none;
@@ -729,7 +729,7 @@
       outline: none; cursor: pointer;
     }
     .block-rest-kind { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.06em; }
-    .block-rest-inp  { font-family: 'Barlow', sans-serif; width: 58px; }
+    .block-rest-inp  { font-family: 'Barlow', sans-serif; width: 76px; }
     .block-remove {
       margin-left: auto; background: none; border: none;
       color: rgba(200,52,26,0.45); cursor: pointer; font-size: 15px;
@@ -750,19 +750,19 @@
       color: var(--dark); background: rgba(255,255,255,0.85); outline: none;
     }
     .piece-inp:focus { border-color: var(--red); }
-    .piece-dist { width: 52px; }
-    .piece-time { width: 54px; }
-    .piece-pace { width: 62px; }
-    .piece-rval { width: 48px; }
+    .piece-dist { width: 76px; }
+    .piece-time { width: 76px; }
+    .piece-pace { width: 86px; }
+    .piece-rval { width: 68px; }
     .piece-sel {
       padding: 6px 5px; border: 1px solid var(--border); border-radius: 3px;
       font-size: 14px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.06em;
       color: var(--dark); background: rgba(255,255,255,0.85); outline: none; cursor: pointer;
     }
-    .piece-unit   { width: 52px; }
-    .piece-effort { width: 58px; }
-    .piece-rkind  { width: 62px; }
-    .piece-runit  { width: 46px; }
+    .piece-unit   { width: 68px; }
+    .piece-effort { width: 76px; }
+    .piece-rkind  { width: 82px; }
+    .piece-runit  { width: 62px; }
     .piece-lbl {
       font-size: 13px; font-family: 'Bebas Neue', sans-serif;
       letter-spacing: 0.14em; opacity: 0.35; white-space: nowrap;
