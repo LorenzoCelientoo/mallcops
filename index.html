@@ -421,7 +421,7 @@
     /* ===== RUNNERS SECTION ===== */
     .runners-section {
       width: 100%;
-      max-width: 900px;
+      max-width: 1400px;
       margin-top: 4rem;
       padding-bottom: 5rem;
       opacity: 0;
@@ -450,10 +450,17 @@
     }
 
     .runners-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3rem;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 2rem;
+      justify-items: center;
+    }
+
+    @media (max-width: 480px) {
+      .runners-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
     }
 
     @keyframes float {
@@ -466,8 +473,10 @@
 
     /* Flip Card */
     .flip-card {
-      width: 200px;
-      height: 275px;
+      width: 100%;
+      max-width: 220px;
+      aspect-ratio: 4 / 5.5;
+      height: auto;
       perspective: 1000px;
       cursor: pointer;
       animation: float 10s ease-in-out infinite;
