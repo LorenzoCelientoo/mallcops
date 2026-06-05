@@ -1016,13 +1016,13 @@
           }
         } catch(e) { /* members not publicly readable yet — keep runners.js list */ }
 
-        // Load PBs
+        // Load PBs (case-insensitive so "cyrus" matches "Cyrus" etc.)
         const snap = await db.collection('pbs').get();
         const pbMap = {};
-        snap.forEach(doc => { pbMap[doc.id] = doc.data().times || []; });
+        snap.forEach(doc => { pbMap[doc.id.toLowerCase()] = doc.data().times || []; });
 
         for (const name of visibleRunners) {
-          buildCard(name, pbMap[name] || []);
+          buildCard(name, pbMap[name.toLowerCase()] || []);
         }
       } catch(err) {
         for (const name of uniqueRunners) {

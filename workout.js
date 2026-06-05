@@ -1998,8 +1998,8 @@ function exportPDF() {
     + '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;'
     + 'color:rgba(255,255,255,0.4);margin-bottom:20px">Choose the layout for your device</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
-    + btn('CHROME', 'Windows &amp; Mac<br>Chrome / Edge', '🖥️', true)
-    + btn('SAFARI', 'iPhone, iPad &amp;<br>Mac Safari', '📱', false)
+    + btn('PC / LAPTOP', 'Windows, Mac<br>Chrome / Edge / Safari', '🖥️', true)
+    + btn('PHONE / MOBILE', 'iPhone, iPad<br>&amp; Android', '📱', false)
     + '</div>'
     + '<button onclick="document.getElementById(\'pdf-picker\').remove()" style="'
     + 'width:100%;font-family:\'Bebas Neue\',sans-serif;font-size:11px;letter-spacing:0.14em;'
