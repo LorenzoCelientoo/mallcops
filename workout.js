@@ -1,4 +1,4 @@
-﻿// ── Firebase ───────────────────────────────────────────────────────────────
+// ── Firebase ───────────────────────────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey: "AIzaSyDw8mLJ6MhSSgyFJaW1tGvpn0bi7P9DtOk",
@@ -603,8 +603,8 @@ function updateBuilderSummary() {
       const rbs = block.restBetweenSets;
       if (rbs?.kind && rbs.kind !== 'none' && rbs.val) {
         setRest = ` | ${rbs.kind === 'jog'
-          ? formatDistDisplay(rbs.val, rbs.restUnit || 'm') + ' jog btw sets'
-          : rbs.val + ' btw sets'}`;
+          ? formatDistDisplay(rbs.val, rbs.restUnit || 'm') + ' jog btw blocks'
+          : rbs.val + ' btw blocks'}`;
       }
       lines.push(`<span class="bs-line"><strong>Block ${bi + 1}:</strong> ${sets}×(${pieceDescs.join(' / ')})${setRest}</span>`);
     });
@@ -900,7 +900,7 @@ function makeBlock(block, blockIdx, container) {
   sI.type = 'number'; sI.min = '1'; sI.className = 'block-sets-inp'; sI.value = block.sets || 1;
   sI.addEventListener('input', () => { block.sets = parseInt(sI.value) || 1; updateBuilderTotal(); });
 
-  const rL = document.createElement('span'); rL.className = 'block-head-lbl'; rL.textContent = 'REST BTW SETS:';
+  const rL = document.createElement('span'); rL.className = 'block-head-lbl'; rL.textContent = 'REST BTW BLOCKS:';
   const rK = document.createElement('select'); rK.className = 'block-rest-kind';
   [['none', 'None'], ['time', 'Time'], ['jog', 'Jog']].forEach(([v, l]) => {
     const o = document.createElement('option'); o.value = v; o.textContent = l;
@@ -1087,9 +1087,9 @@ function calcBuilderMiles() {
         if (p.restAfter?.kind === 'jog' && p.restAfter.val)
           easy += toMiles(p.restAfter.val, p.restAfter.restUnit || 'm') * sets;
       });
-      // Jog rest between sets = easy miles × (sets − 1)
+      // Jog rest between blocks = easy miles added once after the block (before next block)
       if (block.restBetweenSets?.kind === 'jog' && block.restBetweenSets.val)
-        easy += toMiles(block.restBetweenSets.val, block.restBetweenSets.restUnit || 'm') * Math.max(0, sets - 1);
+        easy += toMiles(block.restBetweenSets.val, block.restBetweenSets.restUnit || 'm');
     });
   } else {
     hard += toMiles(builderData.hard?.dist, builderData.hard?.unit || 'mi');
@@ -2089,7 +2089,7 @@ function formatStructureLines(structure, wType) {
       });
       const rbs = blk.restBetweenSets; let sr = '';
       if (rbs && rbs.kind && rbs.kind !== 'none' && rbs.val)
-        sr = rbs.kind === 'jog' ? ' | ' + fmtD(rbs.val, rbs.restUnit || 'm') + ' jog btw sets' : ' | ' + rbs.val + ' btw sets';
+        sr = rbs.kind === 'jog' ? ' | ' + fmtD(rbs.val, rbs.restUnit || 'm') + ' jog btw blocks' : ' | ' + rbs.val + ' btw blocks';
       lines.push({ label: 'Block ' + (bi + 1), text: sets + '\xd7(' + pieces.join(' / ') + ')' + sr, cls: 'hard' });
     });
   }
